@@ -50,11 +50,12 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
-      const { token: newToken, ...userData } = response.data;
+      const userData = response.data;
       
-      setToken(newToken);
+      // Use email as the token since we removed JWT
+      setToken(email);
       setUser(userData);
-      localStorage.setItem('token', newToken);
+      localStorage.setItem('token', email);
       localStorage.setItem('user', JSON.stringify(userData));
 
       return { success: true };

@@ -27,7 +27,7 @@ public class AuthController {
         try {
             User user = userService.getUserByEmail(loginRequest.getEmail());
             
-            if (user == null) {
+            if (user == null || !user.getPassword().equals(loginRequest.getPassword())) {
                 Map<String, String> error = new HashMap<>();
                 error.put("message", "Invalid email or password");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -99,9 +99,35 @@ public class AuthController {
     }
     
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser() {
-        Map<String, String> error = new HashMap<>();
-        error.put("message", "Not implemented");
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(error);
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            // Extract email from Authorization header (Bearer token)
+            String email = authHeader.substring(7); // Remove "Bearer " prefix
+            
+            User user = userService.getUserByEmail(email);
+            if (user == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "User not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            AuthResponse userInfo = new AuthResponse();
+            userInfo.setId(user.getId());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setFirstName(user.getFirstName());
+            userInfo.setLastName(user.getLastName());
+            userInfo.setRole(user.getRole());
+            userInfo.setClassGrade(user.getClassGrade());
+            userInfo.setSubjectTaught(user.getSubjectTaught());
+            userInfo.setStudentId(user.getStudentId());
+            userInfo.setParentOfStudentId(user.getParentOfStudentId());
+            
+            return ResponseEntity.ok(userInfo);
+            
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to get user info: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 } 
