@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiCalendar, FiClock, FiCheckCircle, FiTrendingUp, FiBell, FiBook } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import { 
+  DocumentPlusIcon,
+  ClockIcon,
+  BookOpenIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
 const TeacherDashboard = () => {
@@ -76,216 +86,214 @@ const TeacherDashboard = () => {
     }
   ]);
 
+  const [homeworks, setHomeworks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { user, token } = useAuth();
+
+  useEffect(() => {
+    const fetchHomeworks = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/homework/teacher', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setHomeworks(response.data);
+      } catch (err) {
+        setError('Failed to fetch homeworks');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomeworks();
+  }, [token]);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <Header />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 mb-8 text-white relative overflow-hidden"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8"
         >
-          <div className="absolute right-0 top-0 w-1/3 h-full opacity-10">
-            <img
-              src="https://img.freepik.com/free-vector/teacher-standing-near-blackboard-holding-stick-isolated-flat-vector-illustration_74855-3725.jpg"
-              alt="Teacher"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Welcome back, Teacher!</h1>
-          <p className="text-indigo-100">Manage your classes and track student progress</p>
-          
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white/10 rounded-2xl p-6 backdrop-blur-lg"
-            >
-              <div className="flex items-center">
-                <FiUsers className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-indigo-100">Total Students</p>
-                  <h3 className="text-2xl font-bold">83</h3>
-                </div>
+          <div className="px-6 py-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome back, {user?.firstName}!
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Manage your class assignments and track student progress
+                </p>
               </div>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white/10 rounded-2xl p-6 backdrop-blur-lg"
-            >
-              <div className="flex items-center">
-                <FiBook className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-indigo-100">Classes</p>
-                  <h3 className="text-2xl font-bold">3</h3>
-                </div>
-              </div>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white/10 rounded-2xl p-6 backdrop-blur-lg"
-            >
-              <div className="flex items-center">
-                <FiCheckCircle className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-indigo-100">Avg. Attendance</p>
-                  <h3 className="text-2xl font-bold">92%</h3>
-                </div>
-              </div>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white/10 rounded-2xl p-6 backdrop-blur-lg"
-            >
-              <div className="flex items-center">
-                <FiTrendingUp className="h-8 w-8 mr-4" />
-                <div>
-                  <p className="text-indigo-100">Assignments</p>
-                  <h3 className="text-2xl font-bold">12</h3>
-                </div>
-              </div>
-            </motion.div>
+              <Link
+                to="/create-homework"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+              >
+                <DocumentPlusIcon className="h-5 w-5 mr-2" />
+                Create Homework
+              </Link>
+            </div>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Classes Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="bg-white rounded-3xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Today's Classes</h2>
-                <button className="text-indigo-600 hover:text-indigo-700 font-medium">View Schedule</button>
+        {/* Stats Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DocumentTextIcon className="h-8 w-8 text-sky-500" />
               </div>
-              <div className="space-y-4">
-                {classes.map((class_) => (
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Total Assignments
+                </h3>
+                <p className="text-2xl font-semibold text-sky-600">
+                  {homeworks.length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ClockIcon className="h-8 w-8 text-indigo-500" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Pending Review
+                </h3>
+                <p className="text-2xl font-semibold text-indigo-600">
+                  0
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <UserGroupIcon className="h-8 w-8 text-sky-500" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Class Grade
+                </h3>
+                <p className="text-2xl font-semibold text-sky-600">
+                  {user?.classGrade || 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <BookOpenIcon className="h-8 w-8 text-indigo-500" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Subject
+                </h3>
+                <p className="text-2xl font-semibold text-indigo-600">
+                  {user?.subjectTaught || 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Homeworks List */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-white rounded-2xl shadow-xl overflow-hidden"
+        >
+          <div className="px-6 py-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Recent Assignments
+            </h2>
+
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600">{error}</div>
+            ) : homeworks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No assignments created yet
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {homeworks.map((homework) => (
                   <motion.div
-                    key={class_.id}
-                    whileHover={{ scale: 1.01 }}
-                    className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-md transition-all duration-200"
+                    key={homework.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-gray-50 rounded-xl p-6"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-                          <FiClock className="h-6 w-6 text-indigo-600" />
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="font-semibold text-gray-900">{class_.name}</h3>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {homework.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {homework.description}
+                        </p>
+                        <div className="mt-4 flex items-center space-x-4">
                           <div className="flex items-center text-sm text-gray-500">
-                            <span>{class_.time}</span>
-                            <span className="mx-2">•</span>
-                            <span>{class_.room}</span>
+                            <BookOpenIcon className="h-4 w-4 mr-1" />
+                            {homework.subject}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500">
+                            <UserGroupIcon className="h-4 w-4 mr-1" />
+                            Grade {homework.classGrade}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500">
+                            <CalendarIcon className="h-4 w-4 mr-1" />
+                            Due: {formatDate(homework.dueDate)}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <FiUsers className="mr-1" />
-                          <span>{class_.students} students</span>
-                        </div>
-                        <div className="text-sm font-medium text-indigo-600">
-                          {class_.attendance}% attendance
-                        </div>
-                      </div>
+                      {homework.fileUrl && (
+                        <a
+                          href={`http://localhost:8080${homework.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-sm text-sky-600 hover:text-sky-700"
+                        >
+                          <DocumentTextIcon className="h-5 w-5 mr-1" />
+                          {homework.fileName}
+                        </a>
+                      )}
                     </div>
                   </motion.div>
                 ))}
               </div>
-            </div>
-
-            {/* Assignments Section */}
-            <div className="bg-white rounded-3xl shadow-sm p-6 mt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Active Assignments</h2>
-                <button className="text-indigo-600 hover:text-indigo-700 font-medium">Create New</button>
-              </div>
-              <div className="space-y-4">
-                {assignments.map((assignment) => (
-                  <motion.div
-                    key={assignment.id}
-                    whileHover={{ scale: 1.01 }}
-                    className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{assignment.title}</h3>
-                        <p className="text-sm text-gray-500">{assignment.class}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">Due: {assignment.dueDate}</div>
-                        <div className="text-sm font-medium text-indigo-600">
-                          {assignment.submitted}/{assignment.total} submitted
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                        <span>Submission Progress</span>
-                        <span>{Math.round((assignment.submitted / assignment.total) * 100)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-indigo-500 rounded-full h-2 transition-all duration-300"
-                          style={{ width: `${(assignment.submitted / assignment.total) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="space-y-8"
-          >
-            {/* Calendar Section */}
-            <div className="bg-white rounded-3xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Calendar</h2>
-                <button className="text-indigo-600 hover:text-indigo-700 font-medium">
-                  <FiCalendar className="h-5 w-5" />
-                </button>
-              </div>
-              {/* Calendar component would go here */}
-              <div className="h-48 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
-                <p className="text-gray-500">Calendar Component</p>
-              </div>
-            </div>
-
-            {/* Notifications Section */}
-            <div className="bg-white rounded-3xl shadow-sm p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Notifications</h2>
-              <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <motion.div
-                    key={notification.id}
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-start p-4 border border-gray-100 rounded-2xl hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <FiBell className="h-4 w-4 text-indigo-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm text-gray-900">{notification.message}</p>
-                      <span className="text-xs text-gray-500">{notification.time}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            )}
+          </div>
+        </motion.div>
       </div>
     </div>
   );

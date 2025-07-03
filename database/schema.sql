@@ -6,14 +6,18 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    role ENUM('ADMIN', 'TEACHER', 'STUDENT', 'PARENT') NOT NULL,
-    phone VARCHAR(20),
-    profile_image VARCHAR(500),
-    is_active BOOLEAN DEFAULT TRUE,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(20),
+    class_grade VARCHAR(10),
+    subject_taught VARCHAR(100),
+    student_id BIGINT,
+    parent_of_student_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    FOREIGN KEY (parent_of_student_id) REFERENCES users(id)
 );
 
 -- Table: Student-Parent relationships
@@ -67,21 +71,17 @@ CREATE TABLE IF NOT EXISTS student_classes (
 -- Table: Homework assignments
 CREATE TABLE IF NOT EXISTS homework (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     description TEXT,
-    subject_id BIGINT NOT NULL,
-    class_id BIGINT NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    class_grade VARCHAR(10) NOT NULL,
+    due_date TIMESTAMP NOT NULL,
+    file_url VARCHAR(255),
+    file_name VARCHAR(255),
     teacher_id BIGINT NOT NULL,
-    due_date DATETIME NOT NULL,
-    attachment_url VARCHAR(500),
-    attachment_name VARCHAR(255),
-    points INT DEFAULT 100,
-    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
 -- Table: Homework submissions
@@ -144,6 +144,6 @@ CREATE TABLE IF NOT EXISTS support_requests (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_homework_due_date ON homework(due_date);
-CREATE INDEX idx_homework_class_subject ON homework(class_id, subject_id);
+CREATE INDEX idx_homework_class_subject ON homework(class_grade);
 CREATE INDEX idx_submissions_status ON homework_submissions(status);
 CREATE INDEX idx_announcements_active_publish ON announcements(is_active, publish_date); 

@@ -1,15 +1,32 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
-import Welcome from './components/Welcome';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminDashboard from './components/dashboards/AdminDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
+import CreateHomework from './components/homework/CreateHomework';
+import Welcome from './components/Welcome';
+import { useAuth } from './context/AuthContext';
 
-function App() {
+const DashboardRouter = () => {
+  const { user } = useAuth();
+
+  switch (user?.role) {
+    case 'ADMIN':
+      return <AdminDashboard />;
+    case 'TEACHER':
+      return <TeacherDashboard />;
+    case 'STUDENT':
+      return <StudentDashboard />;
+    default:
+      return <Navigate to="/login" />;
+  }
+};
+
+const App = () => {
   return (
     <AuthProvider>
       <Router>
@@ -53,7 +70,21 @@ function App() {
             {/* Legacy dashboard route - redirect based on role */}
             <Route 
               path="/dashboard" 
-              element={<Navigate to="/student" replace />} 
+              element={
+                <ProtectedRoute>
+                  <DashboardRouter />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Create homework route */}
+            <Route
+              path="/create-homework"
+              element={
+                <ProtectedRoute requiredRoles={['TEACHER']}>
+                  <CreateHomework />
+                </ProtectedRoute>
+              }
             />
             
             {/* Catch all route */}
@@ -63,6 +94,6 @@ function App() {
       </Router>
     </AuthProvider>
   );
-}
+};
 
 export default App; 
