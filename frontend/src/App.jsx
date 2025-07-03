@@ -40,11 +40,11 @@ function App() {
               } 
             />
             
-            {/* Student/Parent Routes */}
+            {/* Student Routes */}
             <Route 
               path="/student/*" 
               element={
-                <ProtectedRoute requiredRoles={['STUDENT', 'PARENT']}>
+                <ProtectedRoute requiredRoles={['STUDENT']}>
                   <StudentDashboard />
                 </ProtectedRoute>
               } 
