@@ -8,7 +8,8 @@ import {
   CalendarIcon, 
   BookOpenIcon,
   UserGroupIcon,
-  PaperClipIcon
+  PaperClipIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 const CreateHomework = () => {
@@ -22,6 +23,7 @@ const CreateHomework = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [preview, setPreview] = useState('');
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -53,6 +55,7 @@ const CreateHomework = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess(false);
 
     try {
       const formPayload = new FormData();
@@ -75,7 +78,11 @@ const CreateHomework = () => {
         }
       });
 
-      navigate('/dashboard');
+      setSuccess(true);
+      // Wait for 1.5 seconds to show success message before navigating
+      setTimeout(() => {
+        navigate('/teacher', { state: { message: 'Assignment created successfully!' } });
+      }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create homework');
     } finally {
@@ -110,6 +117,17 @@ const CreateHomework = () => {
                 className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
               >
                 {error}
+              </motion.div>
+            )}
+
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-center"
+              >
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                Assignment created successfully! Redirecting...
               </motion.div>
             )}
 
@@ -172,16 +190,26 @@ const CreateHomework = () => {
                     Class Grade
                   </label>
                   <div className="mt-1 relative">
-                    <UserGroupIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
+                    <UserGroupIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
+                    <select
                       name="classGrade"
                       required
                       value={formData.classGrade}
                       onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="Enter class grade"
-                    />
+                      className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                    >
+                      <option value="">Select Grade</option>
+                      {[...Array(10)].map((_, index) => (
+                        <option key={index + 1} value={index + 1}>
+                          Grade {index + 1}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>

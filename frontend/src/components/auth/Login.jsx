@@ -29,7 +29,23 @@ const Login = () => {
 
     const result = await login(formData.email, formData.password);
     if (result.success) {
-      navigate('/dashboard');
+      // Navigate based on user role
+      switch (result.userData.role) {
+        case 'ADMIN':
+          navigate('/admin');
+          break;
+        case 'TEACHER':
+          navigate('/teacher');
+          break;
+        case 'STUDENT':
+          navigate('/student');
+          break;
+        case 'PARENT':
+          navigate('/parent');
+          break;
+        default:
+          navigate('/');
+      }
     } else {
       setError(result.error);
     }

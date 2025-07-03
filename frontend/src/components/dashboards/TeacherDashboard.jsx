@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -12,11 +12,15 @@ import {
   DocumentTextIcon,
   AcademicCapIcon,
   BellIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
 const TeacherDashboard = () => {
+  const location = useLocation();
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [classes] = useState([
     {
       id: 1,
@@ -66,9 +70,22 @@ const TeacherDashboard = () => {
   ]);
 
   const [homeworks, setHomeworks] = useState([]);
+  const [homeworksByGrade, setHomeworksByGrade] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user, token } = useAuth();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      setShowSuccessMessage(true);
+      // Clear the message after 5 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchHomeworks = async () => {
@@ -77,6 +94,17 @@ const TeacherDashboard = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setHomeworks(response.data);
+        
+        // Group homeworks by grade
+        const byGrade = response.data.reduce((acc, homework) => {
+          const grade = homework.classGrade;
+          if (!acc[grade]) {
+            acc[grade] = [];
+          }
+          acc[grade].push(homework);
+          return acc;
+        }, {});
+        setHomeworksByGrade(byGrade);
       } catch (err) {
         setError('Failed to fetch homeworks');
       } finally {
@@ -113,10 +141,30 @@ const TeacherDashboard = () => {
     }
   };
 
+  // Calculate total students across all classes
+  const totalStudents = classes.reduce((sum, cls) => sum + cls.students, 0);
+
+  // Calculate average attendance
+  const avgAttendance = Math.round(
+    classes.reduce((sum, cls) => sum + cls.attendance, 0) / classes.length
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {showSuccessMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl text-base flex items-center justify-center shadow-md"
+          >
+            <CheckCircleIcon className="h-5 w-5 mr-2" />
+            {successMessage}
+          </motion.div>
+        )}
+
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -141,7 +189,7 @@ const TeacherDashboard = () => {
                 </p>
               </div>
               <Link
-                to="/create-homework"
+                to="/homework/create"
                 className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl text-base font-medium text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 shadow-lg transform hover:scale-105 transition-all duration-200"
               >
                 <DocumentPlusIcon className="h-5 w-5 mr-2" />
@@ -158,21 +206,28 @@ const TeacherDashboard = () => {
           animate="visible"
           className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {/* Total Assignments */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-sky-100">
-                <DocumentTextIcon className="h-8 w-8 text-sky-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Assignments</p>
-                <p className="text-2xl font-semibold text-sky-600">{homeworks.length}</p>
-              </div>
-            </div>
-          </motion.div>
+          {/* Assignments by Grade */}
+          {classes.map((cls) => {
+            const gradeNumber = cls.name.split('Grade ')[1];
+            const gradeHomeworks = homeworksByGrade[gradeNumber] || [];
+            return (
+              <motion.div
+                key={cls.id}
+                variants={itemVariants}
+                className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+              >
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-sky-100">
+                    <DocumentTextIcon className="h-8 w-8 text-sky-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Grade {gradeNumber} Assignments</p>
+                    <p className="text-2xl font-semibold text-sky-600">{gradeHomeworks.length}</p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
 
           {/* Active Students */}
           <motion.div
@@ -185,9 +240,7 @@ const TeacherDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Active Students</p>
-                <p className="text-2xl font-semibold text-indigo-600">
-                  {classes.reduce((sum, cls) => sum + cls.students, 0)}
-                </p>
+                <p className="text-2xl font-semibold text-indigo-600">{totalStudents}</p>
               </div>
             </div>
           </motion.div>
@@ -198,14 +251,12 @@ const TeacherDashboard = () => {
             className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
           >
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-sky-100">
-                <ChartBarIcon className="h-8 w-8 text-sky-600" />
+              <div className="p-3 rounded-full bg-green-100">
+                <ChartBarIcon className="h-8 w-8 text-green-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Avg. Attendance</p>
-                <p className="text-2xl font-semibold text-sky-600">
-                  {Math.round(classes.reduce((sum, cls) => sum + cls.attendance, 0) / classes.length)}%
-                </p>
+                <p className="text-2xl font-semibold text-green-600">{avgAttendance}%</p>
               </div>
             </div>
           </motion.div>
@@ -216,12 +267,12 @@ const TeacherDashboard = () => {
             className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
           >
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-indigo-100">
-                <BookOpenIcon className="h-8 w-8 text-indigo-600" />
+              <div className="p-3 rounded-full bg-blue-100">
+                <BookOpenIcon className="h-8 w-8 text-blue-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Subject</p>
-                <p className="text-2xl font-semibold text-indigo-600">
+                <p className="text-2xl font-semibold text-blue-600">
                   {user?.subjectTaught || 'N/A'}
                 </p>
               </div>

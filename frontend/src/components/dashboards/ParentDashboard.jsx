@@ -5,23 +5,26 @@ import { useAuth } from '../../context/AuthContext';
 import {
   BookOpenIcon,
   CalendarIcon,
-  ClockIcon,
   DocumentTextIcon,
+  UserIcon,
   AcademicCapIcon,
   ChevronDownIcon,
   ArrowDownIcon,
   ArrowUpIcon,
-  FunnelIcon
+  FunnelIcon,
+  CheckCircleIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
-const StudentDashboard = () => {
+const ParentDashboard = () => {
   const [homeworks, setHomeworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('dueDate');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [studentInfo, setStudentInfo] = useState(null);
   const { user, token } = useAuth();
 
   const subjects = [
@@ -36,14 +39,29 @@ const StudentDashboard = () => {
   ];
 
   useEffect(() => {
+    fetchStudentInfo();
     fetchHomeworks();
   }, [token, sortBy, sortOrder, selectedSubject]);
+
+  const fetchStudentInfo = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/users/${user.parentOfStudentId}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
+      setStudentInfo(response.data);
+    } catch (err) {
+      console.error('Error fetching student info:', err);
+    }
+  };
 
   const fetchHomeworks = async () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:8080/api/homework/student?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `http://localhost:8080/api/homework/parent?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -121,7 +139,7 @@ const StudentDashboard = () => {
           transition={{ duration: 0.5 }}
           className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 relative"
           style={{
-            backgroundImage: 'url("https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1973&auto=format&fit=crop")',
+            backgroundImage: 'url("https://images.unsplash.com/photo-1606761568499-6d2451b23c66?q=80&w=1974&auto=format&fit=crop")',
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
@@ -130,21 +148,31 @@ const StudentDashboard = () => {
           <div className="relative px-6 py-12">
             <div className="max-w-3xl">
               <h1 className="text-4xl font-bold text-white font-sans">
-                Welcome back, {user?.firstName}!
+                Welcome, {user?.firstName}!
               </h1>
               <p className="mt-2 text-sky-100 text-lg">
-                Stay on top of your assignments and track your progress.
+                Monitor your child's academic progress and upcoming assignments.
               </p>
-              <div className="mt-4 flex items-center space-x-4">
-                <div className="bg-sky-100/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white">
-                  <span className="text-sm">Grade</span>
-                  <p className="text-lg font-semibold">{user?.classGrade}</p>
+              {studentInfo && (
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-sky-100/20 backdrop-blur-sm rounded-lg p-4 text-white">
+                    <div className="flex items-center">
+                      <UserIcon className="h-5 w-5 mr-2" />
+                      <span className="text-sm">Student Name</span>
+                    </div>
+                    <p className="text-lg font-semibold mt-1">
+                      {studentInfo.firstName} {studentInfo.lastName}
+                    </p>
+                  </div>
+                  <div className="bg-sky-100/20 backdrop-blur-sm rounded-lg p-4 text-white">
+                    <div className="flex items-center">
+                      <AcademicCapIcon className="h-5 w-5 mr-2" />
+                      <span className="text-sm">Grade</span>
+                    </div>
+                    <p className="text-lg font-semibold mt-1">{studentInfo.classGrade}</p>
+                  </div>
                 </div>
-                <div className="bg-sky-100/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white">
-                  <span className="text-sm">Student ID</span>
-                  <p className="text-lg font-semibold">{user?.studentId}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -213,7 +241,7 @@ const StudentDashboard = () => {
             <div className="text-center py-12">
               <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No homework</h3>
-              <p className="mt-1 text-sm text-gray-500">You're all caught up!</p>
+              <p className="mt-1 text-sm text-gray-500">Your child is all caught up!</p>
             </div>
           ) : (
             homeworks.map((homework, index) => {
@@ -234,6 +262,17 @@ const StudentDashboard = () => {
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${dueStatus.class}`}>
                             {dueStatus.text}
                           </span>
+                          {homework.completed ? (
+                            <span className="inline-flex items-center text-green-600">
+                              <CheckCircleIcon className="h-5 w-5 mr-1" />
+                              Completed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center text-red-600">
+                              <XCircleIcon className="h-5 w-5 mr-1" />
+                              Pending
+                            </span>
+                          )}
                         </div>
                         <p className="mt-2 text-gray-600">{homework.description}</p>
                         <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
@@ -270,4 +309,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard; 
+export default ParentDashboard; 

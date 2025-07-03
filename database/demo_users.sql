@@ -4,44 +4,44 @@
 
 USE homework_db;
 
--- Insert demo users (Note: passwords will be automatically encoded by the Spring Security BCryptPasswordEncoder)
--- These INSERT statements should be run after the application starts for the first time
--- Or you can use the registration endpoints to create these users
+-- Clear existing data
+DELETE FROM users;
 
+-- Reset auto-increment
+ALTER TABLE users AUTO_INCREMENT = 1;
+
+-- Insert demo users
 -- Admin User
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, is_active, created_at, updated_at) 
-VALUES ('Admin', 'User', 'admin@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'ADMIN', '123-456-7890', true, NOW(), NOW());
+INSERT INTO users (email, password, first_name, last_name, role, phone_number) 
+VALUES ('admin@homework.com', '$2a$10$example.hash.admin', 'School', 'Administrator', 'ADMIN', '+1234567890');
 
 -- Teacher User
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, subject_taught, is_active, created_at, updated_at) 
-VALUES ('John', 'Smith', 'teacher@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'TEACHER', '123-456-7891', 'Mathematics', true, NOW(), NOW());
+INSERT INTO users (email, password, first_name, last_name, role, phone_number, subject_taught) 
+VALUES ('teacher@homework.com', '$2a$10$example.hash.teacher', 'John', 'Smith', 'TEACHER', '+1234567891', 'Mathematics');
 
 -- Student User
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, student_id, is_active, created_at, updated_at) 
-VALUES ('Emma', 'Johnson', 'student@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'STUDENT', '123-456-7892', '3rd Grade', 'STU001', true, NOW(), NOW());
+INSERT INTO users (email, password, first_name, last_name, role, phone_number, class_grade, student_id) 
+VALUES ('student@homework.com', '$2a$10$example.hash.student', 'Emma', 'Johnson', 'STUDENT', '+1234567892', '3rd Grade', 'STU001');
 
--- Parent User
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, parent_of_student_id, is_active, created_at, updated_at) 
-VALUES ('Michael', 'Johnson', 'parent@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'PARENT', '123-456-7893', '3rd Grade', 'STU001', true, NOW(), NOW());
+-- Parent User (linked to Emma Johnson)
+INSERT INTO users (email, password, first_name, last_name, role, phone_number, parent_of_student_id) 
+VALUES ('parent@homework.com', '$2a$10$example.hash.parent', 'Michael', 'Johnson', 'PARENT', '+1234567893', 3);
 
 -- Additional demo users
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, subject_taught, is_active, created_at, updated_at) 
-VALUES ('Sarah', 'Wilson', 'sarah.teacher@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'TEACHER', '123-456-7894', 'English', true, NOW(), NOW());
+INSERT INTO users (first_name, last_name, email, password, role, phone_number, subject_taught, created_at, updated_at) 
+VALUES ('Sarah', 'Wilson', 'sarah.teacher@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'TEACHER', '123-456-7894', 'English', NOW(), NOW());
 
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, student_id, is_active, created_at, updated_at) 
-VALUES ('Alex', 'Brown', 'alex.student@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'STUDENT', '123-456-7895', '4th Grade', 'STU002', true, NOW(), NOW());
+INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, student_id, created_at, updated_at) 
+VALUES ('Alex', 'Brown', 'alex.student@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'STUDENT', '123-456-7895', '4th Grade', 'STU002', NOW(), NOW());
 
-INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, student_id, is_active, created_at, updated_at) 
-VALUES ('Sophia', 'Davis', 'sophia.student@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'STUDENT', '123-456-7896', '3rd Grade', 'STU003', true, NOW(), NOW());
+INSERT INTO users (first_name, last_name, email, password, role, phone_number, class_grade, student_id, created_at, updated_at) 
+VALUES ('Sophia', 'Davis', 'sophia.student@homework.com', '$2a$10$rJ8jQRKE.rF8.Q8Q8Q8Q8O8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', 'STUDENT', '123-456-7896', '3rd Grade', 'STU003', NOW(), NOW());
 
 -- Note: The above password hashes are placeholders. 
--- For testing, it's recommended to:
--- 1. Start the application
--- 2. Use the registration endpoint to create demo users with plain text passwords
--- 3. The application will automatically hash the passwords using BCrypt
+-- For testing, please register these users through the application:
 
--- Demo credentials for manual testing:
--- Email: admin@homework.com, Password: admin123
--- Email: teacher@homework.com, Password: teacher123  
--- Email: student@homework.com, Password: student123
--- Email: parent@homework.com, Password: parent123 
+-- Test Credentials:
+-- Admin:   email: admin@homework.com,   password: admin123
+-- Teacher: email: teacher@homework.com, password: teacher123
+-- Student: email: student@homework.com, password: student123
+-- Parent:  email: parent@homework.com,  password: parent123 

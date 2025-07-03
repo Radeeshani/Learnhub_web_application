@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Configure axios defaults globally
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = 'http://localhost:8080';
+
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -30,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get('http://localhost:8080/api/auth/me');
+          const response = await axios.get('/api/auth/me');
           setUser(response.data);
         } catch (error) {
           console.error('Authentication check failed:', error);
@@ -45,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         email,
         password
       });
@@ -58,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', email);
       localStorage.setItem('user', JSON.stringify(userData));
 
-      return { success: true };
+      return { success: true, userData };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
       return { success: false, error: message };
@@ -67,7 +71,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/register', userData);
+      const response = await axios.post('/api/auth/register', userData);
       return { success: true, message: response.data.message };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';

@@ -20,27 +20,29 @@ public class Homework {
     @Column(nullable = false)
     private String subject;
     
-    @Column(name = "class_grade")
+    @Column(name = "class_grade", nullable = false)
     private String classGrade;
     
-    @Column(name = "due_date", nullable = false)
+    @Column(name = "due_date")
     private LocalDateTime dueDate;
-    
-    @Column(name = "file_url")
-    private String fileUrl;
     
     @Column(name = "file_name")
     private String fileName;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id", nullable = false)
-    private User teacher;
+    @Column(name = "file_url")
+    private String fileUrl;
+    
+    @Column(name = "teacher_id")
+    private Long teacherId;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @Column(name = "completed")
+    private boolean completed = false;
     
     @PrePersist
     protected void onCreate() {
@@ -103,14 +105,6 @@ public class Homework {
         this.dueDate = dueDate;
     }
     
-    public String getFileUrl() {
-        return fileUrl;
-    }
-    
-    public void setFileUrl(String fileUrl) {
-        this.fileUrl = fileUrl;
-    }
-    
     public String getFileName() {
         return fileName;
     }
@@ -119,12 +113,20 @@ public class Homework {
         this.fileName = fileName;
     }
     
-    public User getTeacher() {
-        return teacher;
+    public String getFileUrl() {
+        return fileUrl;
     }
     
-    public void setTeacher(User teacher) {
-        this.teacher = teacher;
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+    
+    public Long getTeacherId() {
+        return teacherId;
+    }
+    
+    public void setTeacherId(Long teacherId) {
+        this.teacherId = teacherId;
     }
     
     public LocalDateTime getCreatedAt() {
@@ -141,5 +143,13 @@ public class Homework {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public boolean isCompleted() {
+        return completed;
+    }
+    
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 } 

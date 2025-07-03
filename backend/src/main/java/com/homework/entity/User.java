@@ -4,6 +4,7 @@ import com.homework.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -24,7 +25,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
     
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1024)
     private String password;
     
     @Enumerated(EnumType.STRING)
@@ -33,7 +34,7 @@ public class User {
     
     private String phoneNumber;
     
-    // For students
+    @Column(name = "class_grade")
     private String classGrade;
     
     // For teachers
@@ -42,6 +43,23 @@ public class User {
     // For students
     private String studentId;
     
-    // For parents
-    private String parentOfStudentId;
+    @Column(name = "parent_of_student_id")
+    private Long parentOfStudentId;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 } 

@@ -1,27 +1,35 @@
 -- Use the homework database
 USE homework_db;
 
+-- Drop existing tables in reverse order of dependencies
+DROP TABLE IF EXISTS homework_submissions;
+DROP TABLE IF EXISTS homework;
+DROP TABLE IF EXISTS student_classes;
+DROP TABLE IF EXISTS classes;
+DROP TABLE IF EXISTS subjects;
+DROP TABLE IF EXISTS student_parent;
+DROP TABLE IF EXISTS users;
+
 -- Table: Users (for all user types)
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(1024) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
     phone_number VARCHAR(20),
     class_grade VARCHAR(10),
     subject_taught VARCHAR(100),
-    student_id BIGINT,
+    student_id VARCHAR(50),
     parent_of_student_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (parent_of_student_id) REFERENCES users(id)
 );
 
 -- Table: Student-Parent relationships
-CREATE TABLE IF NOT EXISTS student_parent (
+CREATE TABLE student_parent (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     student_id BIGINT NOT NULL,
     parent_id BIGINT NOT NULL,
@@ -33,7 +41,7 @@ CREATE TABLE IF NOT EXISTS student_parent (
 );
 
 -- Table: Subjects
-CREATE TABLE IF NOT EXISTS subjects (
+CREATE TABLE subjects (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -43,7 +51,7 @@ CREATE TABLE IF NOT EXISTS subjects (
 );
 
 -- Table: Classes/Grades
-CREATE TABLE IF NOT EXISTS classes (
+CREATE TABLE classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     grade_level INT NOT NULL,
@@ -56,7 +64,7 @@ CREATE TABLE IF NOT EXISTS classes (
 );
 
 -- Table: Student-Class enrollment
-CREATE TABLE IF NOT EXISTS student_classes (
+CREATE TABLE student_classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     student_id BIGINT NOT NULL,
     class_id BIGINT NOT NULL,
@@ -69,7 +77,7 @@ CREATE TABLE IF NOT EXISTS student_classes (
 );
 
 -- Table: Homework assignments
-CREATE TABLE IF NOT EXISTS homework (
+CREATE TABLE homework (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -85,7 +93,7 @@ CREATE TABLE IF NOT EXISTS homework (
 );
 
 -- Table: Homework submissions
-CREATE TABLE IF NOT EXISTS homework_submissions (
+CREATE TABLE homework_submissions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     homework_id BIGINT NOT NULL,
     student_id BIGINT NOT NULL,

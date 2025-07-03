@@ -4,6 +4,7 @@ import com.homework.dto.AuthResponse;
 import com.homework.dto.LoginRequest;
 import com.homework.dto.RegisterRequest;
 import com.homework.entity.User;
+import com.homework.enums.UserRole;
 import com.homework.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -26,34 +27,28 @@ public class AuthController {
     private UserService userService;
     
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        logger.debug("Login attempt for email: {}", loginRequest.getEmail());
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        logger.debug("Login attempt for email: {}", request.getEmail());
         try {
-            User user = userService.getUserByEmail(loginRequest.getEmail());
+            User user = userService.loginUser(request.getEmail(), request.getPassword());
             
-            if (user == null || !user.getPassword().equals(loginRequest.getPassword())) {
-                logger.debug("Login failed: Invalid credentials for email: {}", loginRequest.getEmail());
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Invalid email or password");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-            }
+            AuthResponse response = new AuthResponse();
+            response.setId(user.getId());
+            response.setEmail(user.getEmail());
+            response.setFirstName(user.getFirstName());
+            response.setLastName(user.getLastName());
+            response.setRole(user.getRole().toString());
+            response.setClassGrade(user.getClassGrade());
+            response.setParentOfStudentId(user.getParentOfStudentId() != null ? 
+                    user.getParentOfStudentId().toString() : null);
+            response.setSubjectTaught(user.getSubjectTaught());
+            response.setToken("dummy-jwt-token"); // TODO: Implement proper JWT
             
-            AuthResponse authResponse = new AuthResponse();
-            authResponse.setId(user.getId());
-            authResponse.setEmail(user.getEmail());
-            authResponse.setFirstName(user.getFirstName());
-            authResponse.setLastName(user.getLastName());
-            authResponse.setRole(user.getRole());
-            authResponse.setClassGrade(user.getClassGrade());
-            authResponse.setSubjectTaught(user.getSubjectTaught());
-            authResponse.setStudentId(user.getStudentId());
-            authResponse.setParentOfStudentId(user.getParentOfStudentId());
-            
-            logger.debug("Login successful for email: {}", loginRequest.getEmail());
-            return ResponseEntity.ok(authResponse);
+            logger.debug("Login successful for email: {}", request.getEmail());
+            return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.error("Login error for email: {}", loginRequest.getEmail(), e);
+            logger.error("Login error for email: {}", request.getEmail(), e);
             Map<String, String> error = new HashMap<>();
             error.put("message", "Login failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -61,41 +56,42 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        logger.debug("Registration attempt for email: {}", registerRequest.getEmail());
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        logger.debug("Registration attempt for email: {}", request.getEmail());
         try {
-            // Check if email already exists
-            if (userService.emailExists(registerRequest.getEmail())) {
-                logger.debug("Registration failed: Email already exists: {}", registerRequest.getEmail());
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Email already exists");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-            }
-            
-            // Create new user
             User user = new User();
-            user.setFirstName(registerRequest.getFirstName());
-            user.setLastName(registerRequest.getLastName());
-            user.setEmail(registerRequest.getEmail());
-            user.setPassword(registerRequest.getPassword());
-            user.setRole(registerRequest.getRole());
-            user.setPhoneNumber(registerRequest.getPhoneNumber());
-            user.setClassGrade(registerRequest.getClassGrade());
-            user.setSubjectTaught(registerRequest.getSubjectTaught());
-            user.setStudentId(registerRequest.getStudentId());
-            user.setParentOfStudentId(registerRequest.getParentOfStudentId());
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setEmail(request.getEmail());
+            user.setPassword(request.getPassword());
+            user.setRole(UserRole.valueOf(request.getRole()));
+            user.setClassGrade(request.getClassGrade());
+            user.setSubjectTaught(request.getSubjectTaught());
             
-            User savedUser = userService.createUser(user);
+            // If registering as a parent, convert studentId to Long
+            if (UserRole.valueOf(request.getRole()) == UserRole.PARENT && request.getParentOfStudentId() != null) {
+                user.setParentOfStudentId(Long.parseLong(request.getParentOfStudentId()));
+            }
+
+            User savedUser = userService.registerUser(user);
             
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "User registered successfully");
-            response.put("userId", savedUser.getId().toString());
+            AuthResponse response = new AuthResponse();
+            response.setId(savedUser.getId());
+            response.setEmail(savedUser.getEmail());
+            response.setFirstName(savedUser.getFirstName());
+            response.setLastName(savedUser.getLastName());
+            response.setRole(savedUser.getRole().toString());
+            response.setClassGrade(savedUser.getClassGrade());
+            response.setParentOfStudentId(savedUser.getParentOfStudentId() != null ? 
+                    savedUser.getParentOfStudentId().toString() : null);
+            response.setSubjectTaught(savedUser.getSubjectTaught());
+            response.setToken("dummy-jwt-token"); // TODO: Implement proper JWT
             
-            logger.debug("Registration successful for email: {}", registerRequest.getEmail());
+            logger.debug("Registration successful for email: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (Exception e) {
-            logger.error("Registration error for email: {}", registerRequest.getEmail(), e);
+            logger.error("Registration error for email: {}", request.getEmail(), e);
             Map<String, String> error = new HashMap<>();
             error.put("message", "Registration failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -129,11 +125,11 @@ public class AuthController {
             userInfo.setEmail(user.getEmail());
             userInfo.setFirstName(user.getFirstName());
             userInfo.setLastName(user.getLastName());
-            userInfo.setRole(user.getRole());
+            userInfo.setRole(user.getRole().toString());
             userInfo.setClassGrade(user.getClassGrade());
+            userInfo.setParentOfStudentId(user.getParentOfStudentId() != null ? 
+                    user.getParentOfStudentId().toString() : null);
             userInfo.setSubjectTaught(user.getSubjectTaught());
-            userInfo.setStudentId(user.getStudentId());
-            userInfo.setParentOfStudentId(user.getParentOfStudentId());
             
             return ResponseEntity.ok(userInfo);
             
