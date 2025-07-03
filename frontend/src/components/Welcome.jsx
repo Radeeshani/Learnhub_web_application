@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion'
 import { BookOpenIcon, UserGroupIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline'
+import { useNavigate } from 'react-router-dom'
 
 const Welcome = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <motion.div
@@ -77,11 +80,17 @@ const Welcome = () => {
           transition={{ delay: 0.6, duration: 0.6 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <button className="btn-primary">
-            Get Started
+          <button 
+            className="btn-primary"
+            onClick={() => navigate('/login')}
+          >
+            Login
           </button>
-          <button className="btn-secondary">
-            Learn More
+          <button 
+            className="btn-secondary"
+            onClick={() => navigate('/register')}
+          >
+            Register
           </button>
         </motion.div>
 

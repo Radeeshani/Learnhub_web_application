@@ -8,18 +8,19 @@ spring:
     name: homework-application
   
   datasource:
-    url: jdbc:mysql://localhost:3306/homework_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/homework_db
     username: root
     password: Ashmhmd25321
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
     hibernate:
-      ddl-auto: none
-    show-sql: false
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
   
   servlet:
     multipart:
@@ -32,7 +33,7 @@ spring:
       password: admin123
 
 jwt:
-  secret: homeworkAppSecretKey2024ForJWTTokenGeneration
+  secret: your-256-bit-secret
   expiration: 86400000  # 24 hours in milliseconds
 
 logging:
