@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -13,12 +13,17 @@ import {
   AcademicCapIcon,
   BellIcon,
   ChartBarIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PaperClipIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
 const TeacherDashboard = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [classes] = useState([
@@ -74,6 +79,9 @@ const TeacherDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user, token } = useAuth();
+  const [editingHomework, setEditingHomework] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedHomework, setSelectedHomework] = useState(null);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -149,6 +157,36 @@ const TeacherDashboard = () => {
     classes.reduce((sum, cls) => sum + cls.attendance, 0) / classes.length
   );
 
+  const handleViewAttachment = (fileUrl) => {
+    // The fileUrl already contains the full path (/uploads/homework/...)
+    const fullUrl = `http://localhost:8080${fileUrl}`;
+    // Open in a new tab and handle potential encoding issues
+    const encodedUrl = encodeURI(fullUrl);
+    window.open(encodedUrl, '_blank');
+  };
+
+  const handleEdit = (homework) => {
+    navigate(`/homework/edit/${homework.id}`, { state: { homework } });
+  };
+
+  const handleDelete = async (homework) => {
+    if (!window.confirm('Are you sure you want to delete this homework?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8080/api/homework/${homework.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      // Refresh homework list
+      fetchHomeworks();
+    } catch (err) {
+      setError('Failed to delete homework');
+      console.error('Error deleting homework:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100">
       <Header />
@@ -206,28 +244,21 @@ const TeacherDashboard = () => {
           animate="visible"
           className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {/* Assignments by Grade */}
-          {classes.map((cls) => {
-            const gradeNumber = cls.name.split('Grade ')[1];
-            const gradeHomeworks = homeworksByGrade[gradeNumber] || [];
-            return (
-              <motion.div
-                key={cls.id}
-                variants={itemVariants}
-                className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
-              >
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-sky-100">
-                    <DocumentTextIcon className="h-8 w-8 text-sky-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Grade {gradeNumber} Assignments</p>
-                    <p className="text-2xl font-semibold text-sky-600">{gradeHomeworks.length}</p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+          {/* Total Assignments */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
+          >
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-sky-100">
+                <DocumentTextIcon className="h-8 w-8 text-sky-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total Assignments</p>
+                <p className="text-2xl font-semibold text-sky-600">{homeworks.length}</p>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Active Students */}
           <motion.div
@@ -395,25 +426,55 @@ const TeacherDashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {homeworks.map((homework, index) => (
+                  {homeworks.map((homework) => (
                     <motion.div
                       key={homework.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl p-6 hover:shadow-lg transition-all duration-200"
+                      variants={itemVariants}
+                      className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
                     >
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900">{homework.title}</h3>
-                          <p className="mt-1 text-sm text-gray-500">Due: {formatDate(homework.dueDate)}</p>
+                          <p className="mt-1 text-sm text-gray-500">{homework.description}</p>
+                          <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <BookOpenIcon className="h-4 w-4 mr-1" />
+                              {homework.subject}
+                            </div>
+                            <div className="flex items-center">
+                              <UserGroupIcon className="h-4 w-4 mr-1" />
+                              Grade {homework.classGrade}
+                            </div>
+                            <div className="flex items-center">
+                              <CalendarIcon className="h-4 w-4 mr-1" />
+                              Due: {formatDate(homework.dueDate)}
+                            </div>
+                            {homework.fileUrl && (
+                              <button
+                                onClick={() => handleViewAttachment(homework.fileUrl)}
+                                className="flex items-center text-sky-600 hover:text-sky-700 transition-colors"
+                              >
+                                <PaperClipIcon className="h-4 w-4 mr-1" />
+                                <span>View Attachment</span>
+                                <EyeIcon className="h-4 w-4 ml-1" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-4">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-sky-800">
-                            Grade {homework.classGrade}
-                          </span>
-                          <button className="text-sky-600 hover:text-sky-800">
-                            <DocumentTextIcon className="h-5 w-5" />
+                        <div className="flex items-center space-x-2 ml-4">
+                          <button
+                            onClick={() => handleEdit(homework)}
+                            className="p-2 text-sky-600 hover:text-sky-700 hover:bg-sky-50 rounded-full transition-colors"
+                            title="Edit Homework"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(homework)}
+                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                            title="Delete Homework"
+                          >
+                            <TrashIcon className="h-5 w-5" />
                           </button>
                         </div>
                       </div>

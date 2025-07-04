@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +29,7 @@ public class HomeworkService {
     @Autowired
     private UserRepository userRepository;
     
-    private final Path uploadPath = Paths.get("uploads/homework");
+    private final Path uploadPath = Paths.get("uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
         try {
@@ -63,6 +64,61 @@ public class HomeworkService {
         homework.setFileUrl(fileUrl);
         
         return homeworkRepository.save(homework);
+    }
+
+    public Homework updateHomework(Long id, HomeworkRequest request, MultipartFile file, String teacherEmail) throws Exception {
+        User teacher = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new Exception("Teacher not found"));
+        
+        Homework homework = homeworkRepository.findById(id)
+                .orElseThrow(() -> new Exception("Homework not found"));
+        
+        if (!homework.getTeacherId().equals(teacher.getId())) {
+            throw new Exception("Not authorized to update this homework");
+        }
+        
+        // If new file is uploaded, delete old file and save new one
+        if (file != null && !file.isEmpty()) {
+            if (homework.getFileName() != null) {
+                Path oldFile = uploadPath.resolve(homework.getFileName());
+                Files.deleteIfExists(oldFile);
+            }
+            
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            Path targetLocation = uploadPath.resolve(fileName);
+            Files.copy(file.getInputStream(), targetLocation);
+            
+            homework.setFileName(fileName);
+            homework.setFileUrl("/uploads/homework/" + fileName);
+        }
+        
+        homework.setTitle(request.getTitle());
+        homework.setDescription(request.getDescription());
+        homework.setSubject(request.getSubject());
+        homework.setClassGrade(request.getClassGrade());
+        homework.setDueDate(request.getDueDate());
+        
+        return homeworkRepository.save(homework);
+    }
+
+    public void deleteHomework(Long id, String teacherEmail) throws Exception {
+        User teacher = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new Exception("Teacher not found"));
+        
+        Homework homework = homeworkRepository.findById(id)
+                .orElseThrow(() -> new Exception("Homework not found"));
+        
+        if (!homework.getTeacherId().equals(teacher.getId())) {
+            throw new Exception("Not authorized to delete this homework");
+        }
+        
+        // Delete associated file if exists
+        if (homework.getFileName() != null) {
+            Path filePath = uploadPath.resolve(homework.getFileName());
+            Files.deleteIfExists(filePath);
+        }
+        
+        homeworkRepository.delete(homework);
     }
     
     public List<Homework> getTeacherHomework(String teacherEmail) throws Exception {
@@ -104,7 +160,8 @@ public class HomeworkService {
     
     public List<Homework> getHomeworkByGrade(String classGrade) {
         Sort sort = Sort.by(Sort.Direction.DESC, "dueDate");
-        return homeworkRepository.findByClassGrade(classGrade, sort);
+        String grade = classGrade.replaceAll("[^0-9]", "");
+        return homeworkRepository.findByClassGrade(grade, sort);
     }
     
     public Homework getHomework(Long id) throws Exception {

@@ -9,6 +9,7 @@ import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
 import ParentDashboard from './components/dashboards/ParentDashboard';
 import CreateHomework from './components/homework/CreateHomework';
+import EditHomework from './components/homework/EditHomework';
 import Welcome from './components/Welcome';
 
 const App = () => {
@@ -61,6 +62,15 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={['TEACHER']}>
                 <CreateHomework />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/homework/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={['TEACHER']}>
+                <EditHomework />
               </ProtectedRoute>
             }
           />

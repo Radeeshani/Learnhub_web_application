@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   DocumentPlusIcon, 
@@ -12,13 +12,16 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-const CreateHomework = () => {
+const EditHomework = () => {
+  const { id } = useParams();
+  const location = useLocation();
+  const homework = location.state?.homework;
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    subject: '',
-    classGrade: '',
-    dueDate: ''
+    title: homework?.title || '',
+    description: homework?.description || '',
+    subject: homework?.subject || '',
+    classGrade: homework?.classGrade || '',
+    dueDate: homework?.dueDate ? new Date(homework.dueDate).toISOString().slice(0, 16) : ''
   });
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -50,7 +53,6 @@ const CreateHomework = () => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     
-    // Create preview for supported file types
     if (selectedFile && selectedFile.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -70,9 +72,10 @@ const CreateHomework = () => {
 
     try {
       const formPayload = new FormData();
-      formPayload.append('file', file);
+      if (file) {
+        formPayload.append('file', file);
+      }
       
-      // Convert date string to ISO format
       const homeworkData = {
         ...formData,
         dueDate: new Date(formData.dueDate).toISOString()
@@ -82,7 +85,7 @@ const CreateHomework = () => {
         type: 'application/json'
       }));
 
-      await axios.post('http://localhost:8080/api/homework', formPayload, {
+      await axios.put(`http://localhost:8080/api/homework/${id}`, formPayload, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -90,12 +93,11 @@ const CreateHomework = () => {
       });
 
       setSuccess(true);
-      // Wait for 1.5 seconds to show success message before navigating
       setTimeout(() => {
-        navigate('/teacher', { state: { message: 'Assignment created successfully!' } });
+        navigate('/teacher', { state: { message: 'Assignment updated successfully!' } });
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create homework');
+      setError(err.response?.data?.message || 'Failed to update homework');
     } finally {
       setLoading(false);
     }
@@ -114,10 +116,10 @@ const CreateHomework = () => {
             <div className="text-center mb-8">
               <DocumentPlusIcon className="mx-auto h-12 w-12 text-sky-500" />
               <h2 className="mt-4 text-3xl font-bold text-gray-900">
-                Create New Homework
+                Edit Homework
               </h2>
               <p className="mt-2 text-sm text-gray-600">
-                Fill in the details below to create a new homework assignment
+                Update the homework assignment details below
               </p>
             </div>
 
@@ -138,7 +140,7 @@ const CreateHomework = () => {
                 className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-center"
               >
                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                Assignment created successfully! Redirecting...
+                Assignment updated successfully! Redirecting...
               </motion.div>
             )}
 
@@ -262,8 +264,13 @@ const CreateHomework = () => {
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <PaperClipIcon className="h-10 w-10 text-gray-400" />
                         <p className="mt-2 text-sm text-gray-500">
-                          {file ? file.name : "Click to upload a file"}
+                          {file ? file.name : homework?.fileName || "Click to upload a new file"}
                         </p>
+                        {homework?.fileName && !file && (
+                          <p className="mt-1 text-xs text-gray-400">
+                            Current file: {homework.fileName}
+                          </p>
+                        )}
                       </div>
                       <input
                         type="file"
@@ -272,34 +279,27 @@ const CreateHomework = () => {
                       />
                     </label>
                   </div>
-                  {preview && (
-                    <div className="mt-2">
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="h-32 w-auto rounded-lg"
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
-                  </div>
-                ) : (
-                  'Create Homework'
-                )}
-              </motion.button>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/teacher')}
+                  className="px-6 py-3 border border-gray-300 rounded-xl text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`px-6 py-3 border border-transparent rounded-xl text-base font-medium text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 ${
+                    loading ? 'opacity-75 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {loading ? 'Updating...' : 'Update Homework'}
+                </button>
+              </div>
             </form>
           </div>
         </motion.div>
@@ -308,4 +308,4 @@ const CreateHomework = () => {
   );
 };
 
-export default CreateHomework; 
+export default EditHomework; 

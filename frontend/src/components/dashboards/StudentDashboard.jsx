@@ -11,7 +11,9 @@ import {
   ChevronDownIcon,
   ArrowDownIcon,
   ArrowUpIcon,
-  FunnelIcon
+  FunnelIcon,
+  PaperClipIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
@@ -42,8 +44,16 @@ const StudentDashboard = () => {
   const fetchHomeworks = async () => {
     try {
       setLoading(true);
+      const gradeNumber = user?.classGrade ? parseInt(user.classGrade.toString().replace('Grade ', '')) : null;
+      
+      if (!gradeNumber) {
+        setError('Invalid grade');
+        setLoading(false);
+        return;
+      }
+
       const response = await axios.get(
-        `http://localhost:8080/api/homework/student?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `http://localhost:8080/api/homework/grade/${gradeNumber}?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -108,6 +118,14 @@ const StudentDashboard = () => {
       y: 0,
       opacity: 1
     }
+  };
+
+  const handleViewAttachment = (fileUrl) => {
+    // The fileUrl already contains the full path (/uploads/homework/...)
+    const fullUrl = `http://localhost:8080${fileUrl}`;
+    // Open in a new tab and handle potential encoding issues
+    const encodedUrl = encodeURI(fullUrl);
+    window.open(encodedUrl, '_blank');
   };
 
   return (
@@ -245,19 +263,18 @@ const StudentDashboard = () => {
                             <CalendarIcon className="h-4 w-4 mr-1" />
                             Due: {formatDate(homework.dueDate)}
                           </div>
+                          {homework.fileUrl && (
+                            <button
+                              onClick={() => handleViewAttachment(homework.fileUrl)}
+                              className="flex items-center text-sky-600 hover:text-sky-700 transition-colors"
+                            >
+                              <PaperClipIcon className="h-4 w-4 mr-1" />
+                              <span>View Attachment</span>
+                              <EyeIcon className="h-4 w-4 ml-1" />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      {homework.fileUrl && (
-                        <a
-                          href={`http://localhost:8080${homework.fileUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-4 flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
-                        >
-                          <DocumentTextIcon className="h-5 w-5 mr-2" />
-                          View Material
-                        </a>
-                      )}
                     </div>
                   </div>
                 </motion.div>

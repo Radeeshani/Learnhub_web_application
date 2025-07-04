@@ -159,4 +159,53 @@ public class HomeworkController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateHomework(
+            @PathVariable Long id,
+            @RequestParam(required = false) MultipartFile file,
+            @Valid @RequestPart("homework") HomeworkRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String teacherEmail = authHeader.substring(7);
+            logger.debug("Updating homework {} for teacher: {}", id, teacherEmail);
+            
+            Homework homework = homeworkService.updateHomework(id, request, file, teacherEmail);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Homework updated successfully");
+            response.put("id", homework.getId());
+            
+            logger.debug("Homework updated successfully with ID: {}", homework.getId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to update homework", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to update homework: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteHomework(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String teacherEmail = authHeader.substring(7);
+            logger.debug("Deleting homework {} for teacher: {}", id, teacherEmail);
+            
+            homeworkService.deleteHomework(id, teacherEmail);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Homework deleted successfully");
+            
+            logger.debug("Homework deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to delete homework", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to delete homework: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 } 
