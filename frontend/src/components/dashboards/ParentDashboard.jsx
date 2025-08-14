@@ -288,7 +288,7 @@ const ParentDashboard = () => {
                       </div>
                       {homework.fileUrl && (
                         <a
-                          href={`http://localhost:8080${homework.fileUrl}`}
+                          href={`http://localhost:8080/api/uploads/homework/${homework.fileUrl.split('/').pop()}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ml-4 flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"

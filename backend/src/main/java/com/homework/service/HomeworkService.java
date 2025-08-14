@@ -29,7 +29,7 @@ public class HomeworkService {
     @Autowired
     private UserRepository userRepository;
     
-    private final Path uploadPath = Paths.get("uploads/homework").toAbsolutePath().normalize();
+    private final Path uploadPath = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
         try {

@@ -121,11 +121,12 @@ const StudentDashboard = () => {
   };
 
   const handleViewAttachment = (fileUrl) => {
-    // The fileUrl already contains the full path (/uploads/homework/...)
-    const fullUrl = `http://localhost:8080${fileUrl}`;
-    // Open in a new tab and handle potential encoding issues
-    const encodedUrl = encodeURI(fullUrl);
-    window.open(encodedUrl, '_blank');
+    // Extract the filename from the fileUrl (e.g., "/uploads/homework/filename.pdf" -> "filename.pdf")
+    const fileName = fileUrl.split('/').pop();
+    // Construct the correct URL for the backend file endpoint with /api context path
+    const fullUrl = `http://localhost:8080/api/uploads/homework/${fileName}`;
+    // Open in a new tab
+    window.open(fullUrl, '_blank');
   };
 
   return (

@@ -1,5 +1,7 @@
 package com.homework.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -14,26 +16,42 @@ import java.nio.file.Paths;
 @RestController
 public class FileController {
 
-    private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
 
     @GetMapping("/uploads/homework/{fileName:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String fileName) {
         try {
-            Path filePath = fileStorageLocation.resolve("homework").resolve(fileName).normalize();
+            logger.debug("Attempting to serve file: {}", fileName);
+            
+            // Get the current working directory and resolve backend/uploads/homework
+            Path currentDir = Paths.get("").toAbsolutePath();
+            Path uploadsDir = currentDir.resolve("backend").resolve("uploads").resolve("homework");
+            Path filePath = uploadsDir.resolve(fileName);
+            
+            logger.debug("Current directory: {}", currentDir);
+            logger.debug("Uploads directory: {}", uploadsDir);
+            logger.debug("File path: {}", filePath);
+            
             Resource resource = new UrlResource(filePath.toUri());
 
-            if (resource.exists()) {
+            if (resource.exists() && resource.isReadable()) {
+                logger.debug("File found and readable: {}", filePath);
                 String contentType = determineContentType(fileName);
                 
                 return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                     .body(resource);
             } else {
+                logger.warn("File not found or not readable: {}", filePath);
                 return ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException ex) {
+            logger.error("Malformed URL exception for file: {}", fileName, ex);
             return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            logger.error("Error serving file: {}", fileName, ex);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -50,5 +68,5 @@ public class FileController {
         } else {
             return "application/octet-stream";
         }
-    }
-} 
+        }
+    } 

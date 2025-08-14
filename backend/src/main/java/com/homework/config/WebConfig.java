@@ -11,8 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Get the absolute path to the uploads directory
-        String uploadDir = Paths.get("uploads").toAbsolutePath().toString();
+        // Use the same path resolution as HomeworkService
+        String uploadDir = Paths.get("backend/uploads").toAbsolutePath().toString();
         
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + uploadDir + "/")
