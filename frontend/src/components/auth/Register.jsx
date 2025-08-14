@@ -233,14 +233,33 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <FiBook className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
+                  <select
                     name="classGrade"
                     value={formData.classGrade}
                     onChange={handleChange}
-                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    placeholder="e.g., Grade 8"
-                  />
+                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                    required
+                  >
+                    <option value="">Select Grade</option>
+                    <option value="Kindergarten">Kindergarten</option>
+                    <option value="1st Grade">1st Grade</option>
+                    <option value="2nd Grade">2nd Grade</option>
+                    <option value="3rd Grade">3rd Grade</option>
+                    <option value="4th Grade">4th Grade</option>
+                    <option value="5th Grade">5th Grade</option>
+                    <option value="6th Grade">6th Grade</option>
+                    <option value="7th Grade">7th Grade</option>
+                    <option value="8th Grade">8th Grade</option>
+                    <option value="9th Grade">9th Grade</option>
+                    <option value="10th Grade">10th Grade</option>
+                    <option value="11th Grade">11th Grade</option>
+                    <option value="12th Grade">12th Grade</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             )}
@@ -252,14 +271,38 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <FiAward className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
+                  <select
                     name="subjectTaught"
                     value={formData.subjectTaught}
                     onChange={handleChange}
-                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    placeholder="e.g., Mathematics"
-                  />
+                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                    required
+                  >
+                    <option value="">Select Subject</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="English">English</option>
+                    <option value="History">History</option>
+                    <option value="Geography">Geography</option>
+                    <option value="Physical Education">Physical Education</option>
+                    <option value="Art">Art</option>
+                    <option value="Music">Music</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Foreign Language">Foreign Language</option>
+                    <option value="Social Studies">Social Studies</option>
+                    <option value="Literature">Literature</option>
+                    <option value="Biology">Biology</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Algebra">Algebra</option>
+                    <option value="Geometry">Geometry</option>
+                    <option value="Calculus">Calculus</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             )}
