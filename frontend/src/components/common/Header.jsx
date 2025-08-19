@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -40,6 +41,15 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Calendar Button */}
+            <button
+              onClick={() => navigate('/calendar')}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              <CalendarIcon className="h-5 w-5 mr-2" />
+              Calendar
+            </button>
+            
             {/* Notification Bell */}
             <NotificationBell />
             

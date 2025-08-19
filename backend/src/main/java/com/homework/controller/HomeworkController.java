@@ -10,6 +10,9 @@ import com.homework.service.HomeworkSubmissionService;
 import com.homework.service.UserService;
 import com.homework.entity.Notification;
 import com.homework.service.NotificationService;
+import com.homework.dto.CalendarEventRequest;
+import com.homework.entity.CalendarEvent;
+import com.homework.service.CalendarService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/homework")
@@ -39,6 +44,163 @@ public class HomeworkController {
 
     @Autowired
     private NotificationService notificationService;
+    
+    @Autowired
+    private CalendarService calendarService;
+    
+    // Calendar endpoints
+    @GetMapping("/calendar/test")
+    public ResponseEntity<String> calendarTest() {
+        return ResponseEntity.ok("Calendar endpoints are working from HomeworkController!");
+    }
+    
+    @GetMapping("/calendar/events")
+    public ResponseEntity<?> getCalendarEvents(
+            @RequestParam(required = false) String view) {
+        try {
+            // For now, get events for user ID 1 (first student)
+            List<CalendarEvent> events;
+            
+            if ("today".equals(view)) {
+                events = calendarService.getTodayEvents(1L);
+            } else if ("week".equals(view)) {
+                events = calendarService.getWeekEvents(1L);
+            } else if ("month".equals(view)) {
+                events = calendarService.getMonthEvents(1L);
+            } else {
+                // Default to upcoming events (next 30 days)
+                events = calendarService.getUpcomingEvents(1L, 30);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Calendar events retrieved successfully");
+            response.put("view", view);
+            response.put("events", events);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to fetch calendar events", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to fetch calendar events: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
+    // Create calendar event
+    @PostMapping("/calendar/events")
+    public ResponseEntity<?> createCalendarEvent(@RequestBody CalendarEventRequest request) {
+        try {
+            // For now, create event for user ID 1 (first student)
+            // In a real system, this would extract user ID from JWT token
+            CalendarEvent event = new CalendarEvent();
+            event.setTitle(request.getTitle());
+            event.setDescription(request.getDescription());
+            event.setStartTime(request.getStartTime());
+            event.setEndTime(request.getEndTime());
+            event.setAllDay(request.isAllDay());
+            event.setEventType(request.getEventTypeEnum());
+            event.setUserId(1L); // Temporary user ID
+            event.setHomeworkId(request.getHomeworkId());
+            event.setClassId(request.getClassId());
+            event.setColor(request.getColor() != null ? request.getColor() : "#3B82F6");
+            event.setLocation(request.getLocation());
+            event.setRecurring(request.isRecurring());
+            event.setRecurrencePattern(request.getRecurrencePattern());
+            
+            CalendarEvent savedEvent = calendarService.createEvent(event);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "Calendar event created successfully");
+            result.put("event", savedEvent);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Failed to create calendar event", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create calendar event: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
+    // Get calendar events with different views
+    @GetMapping("/calendar/events/view")
+    public ResponseEntity<?> getCalendarEventsByView(
+            @RequestParam(required = false) String view,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            // For now, get events for user ID 1 (first student)
+            List<CalendarEvent> events;
+            
+            if ("today".equals(view)) {
+                events = calendarService.getTodayEvents(1L);
+            } else if ("week".equals(view)) {
+                events = calendarService.getWeekEvents(1L);
+            } else if ("month".equals(view)) {
+                events = calendarService.getMonthEvents(1L);
+            } else if (startDate != null && endDate != null) {
+                LocalDateTime start = LocalDateTime.parse(startDate);
+                LocalDateTime end = LocalDateTime.parse(endDate);
+                events = calendarService.getUserEventsInRange(1L, start, end);
+            } else {
+                // Default to upcoming events (next 30 days)
+                events = calendarService.getUpcomingEvents(1L, 30);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Calendar events retrieved successfully");
+            response.put("view", view);
+            response.put("events", events);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to fetch calendar events", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to fetch calendar events: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
+    // Search calendar events
+    @GetMapping("/calendar/search")
+    public ResponseEntity<?> searchCalendarEvents(@RequestParam String query) {
+        try {
+            // For now, search events for user ID 1 (first student)
+            List<CalendarEvent> events = calendarService.searchEvents(1L, query);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Search completed successfully");
+            response.put("query", query);
+            response.put("events", events);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to search calendar events", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to search calendar events: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
+    // Get calendar summary
+    @GetMapping("/calendar/summary")
+    public ResponseEntity<?> getCalendarSummary() {
+        try {
+            // For now, get summary for user ID 1 (first student)
+            java.util.Map<CalendarEvent.EventType, Long> summary = calendarService.getCalendarSummary(1L);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Calendar summary retrieved successfully");
+            response.put("summary", summary);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to get calendar summary", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to get calendar summary: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
     
     @PostMapping
     public ResponseEntity<?> createHomework(
