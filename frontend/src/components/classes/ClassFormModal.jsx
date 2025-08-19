@@ -1,5 +1,6 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const ClassFormModal = ({ isOpen, onClose, onSubmit, formData, setFormData, title, submitText }) => {
   if (!isOpen) return null;
@@ -26,12 +27,21 @@ const ClassFormModal = ({ isOpen, onClose, onSubmit, formData, setFormData, titl
             <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               {title}
             </h3>
-            <button
-              onClick={onClose}
-              className="text-purple-400 hover:text-purple-600 p-2 rounded-full hover:bg-purple-100 transition-all duration-300 transform hover:scale-110"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
+              >
+                <ArrowLeftIcon className="h-4 w-4 mr-1 inline" />
+                Back
+              </button>
+              <button
+                onClick={onClose}
+                className="text-purple-400 hover:text-purple-600 p-2 rounded-full hover:bg-purple-100 transition-all duration-300 transform hover:scale-110"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
           </div>
 
           {/* Form */}

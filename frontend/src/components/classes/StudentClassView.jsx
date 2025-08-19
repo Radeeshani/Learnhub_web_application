@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, BookOpenIcon, UserGroupIcon, CalendarIcon, AcademicCapIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, BookOpenIcon, UserGroupIcon, CalendarIcon, AcademicCapIcon, EyeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import ClassViewModal from './ClassViewModal';
 
 const StudentClassView = () => {
-  const { user, token } = useAuth();
+  const { user, token, getDashboardRoute } = useAuth();
   const { showError } = useToast();
+  const navigate = useNavigate();
   
   const [enrolledClasses, setEnrolledClasses] = useState([]);
   const [allClasses, setAllClasses] = useState([]);
@@ -118,12 +120,24 @@ const StudentClassView = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-            🎓 My Classes
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            View your enrolled classes and discover new ones
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                🎓 My Classes
+              </h1>
+              <p className="mt-2 text-lg text-gray-600">
+                View your enrolled classes and discover new ones
+              </p>
+            </div>
+            
+            <button
+              onClick={() => navigate(getDashboardRoute())}
+              className="group inline-flex items-center px-6 py-3 border-2 border-transparent text-sm font-medium rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+              <span className="font-bold">Back to Dashboard</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

@@ -99,6 +99,23 @@ export const AuthProvider = ({ children }) => {
     return roles.includes(user?.role);
   };
 
+  const getDashboardRoute = () => {
+    if (!user) return '/';
+    
+    switch (user.role) {
+      case 'ADMIN':
+        return '/admin';
+      case 'TEACHER':
+        return '/teacher';
+      case 'STUDENT':
+        return '/student';
+      case 'PARENT':
+        return '/parent';
+      default:
+        return '/';
+    }
+  };
+
   const value = {
     user,
     token,
@@ -108,7 +125,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated,
     hasRole,
-    hasAnyRole
+    hasAnyRole,
+    getDashboardRoute
   };
 
   return (

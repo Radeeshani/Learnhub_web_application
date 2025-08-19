@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, UserGroupIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, UserGroupIcon, BookOpenIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import ClassFormModal from './ClassFormModal';
 import ClassViewModal from './ClassViewModal';
 
 const ClassManagement = () => {
-  const { user, token } = useAuth();
+  const { user, token, getDashboardRoute } = useAuth();
   const { showSuccess, showError } = useToast();
+  const navigate = useNavigate();
   
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -298,6 +300,13 @@ const ClassManagement = () => {
                 <span className="font-bold">Create New Class</span>
               </button>
             )}
+            <button
+              onClick={() => navigate(getDashboardRoute())}
+              className="group inline-flex items-center px-6 py-3 border-2 border-transparent text-sm font-medium rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl animate-pulse"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+              <span className="font-bold">Back to Dashboard</span>
+            </button>
           </div>
         </div>
 
