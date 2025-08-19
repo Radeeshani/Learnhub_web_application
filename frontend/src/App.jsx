@@ -14,6 +14,8 @@ import CreateHomework from './components/homework/CreateHomework';
 import EditHomework from './components/homework/EditHomework';
 import SubmitHomework from './components/homework/SubmitHomework';
 import Calendar from './components/calendar/Calendar';
+import ClassManagement from './components/classes/ClassManagement';
+import StudentClassView from './components/classes/StudentClassView';
 import Welcome from './components/Welcome';
 import NotificationPanel from './components/common/NotificationPanel';
 import ToastContainerWrapper from './components/common/ToastContainerWrapper';
@@ -97,6 +99,25 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']}>
                     <Calendar />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Class Management Routes */}
+              <Route
+                path="/classes"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER']}>
+                    <ClassManagement />
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/classes/student"
+                element={
+                  <ProtectedRoute allowedRoles={['STUDENT']}>
+                    <StudentClassView />
                   </ProtectedRoute>
                 }
               />

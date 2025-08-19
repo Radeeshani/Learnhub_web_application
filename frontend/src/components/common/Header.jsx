@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChevronDownIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -30,6 +32,49 @@ const Header = () => {
     }
   };
 
+  const getNavigationItems = () => {
+    const baseItems = [
+      {
+        name: 'Calendar',
+        href: '/calendar',
+        icon: CalendarIcon,
+        roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
+      }
+    ];
+
+    if (user?.role === 'TEACHER' || user?.role === 'ADMIN') {
+      baseItems.push(
+        {
+          name: 'Class Management',
+          href: '/classes',
+          icon: AcademicCapIcon,
+          roles: ['ADMIN', 'TEACHER']
+        },
+        {
+          name: 'Create Homework',
+          href: '/homework/create',
+          icon: BookOpenIcon,
+          roles: ['TEACHER']
+        }
+      );
+    }
+
+    if (user?.role === 'STUDENT') {
+      baseItems.push(
+        {
+          name: 'My Classes',
+          href: '/classes/student',
+          icon: UserGroupIcon,
+          roles: ['STUDENT']
+        }
+      );
+    }
+
+    return baseItems.filter(item => item.roles.includes(user?.role));
+  };
+
+  const navigationItems = getNavigationItems();
+
   return (
     <header className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,14 +86,66 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Calendar Button */}
-            <button
-              onClick={() => navigate('/calendar')}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            >
-              <CalendarIcon className="h-5 w-5 mr-2" />
-              Calendar
-            </button>
+            {/* Navigation Menu */}
+            <nav className="hidden md:flex items-center space-x-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => navigate(item.href)}
+                    className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? 'text-white bg-purple-600 hover:bg-purple-700'
+                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}
+                  >
+                    <Icon className="h-5 w-5 mr-2" />
+                    {item.name}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Mobile Navigation Dropdown */}
+            <div className="md:hidden relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                Menu
+                <ChevronDownIcon className="h-4 w-4 ml-1" />
+              </button>
+              
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.href;
+                    
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          navigate(item.href);
+                          setShowDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm flex items-center ${
+                          isActive
+                            ? 'text-white bg-purple-600'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 mr-2" />
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             
             {/* Notification Bell */}
             <NotificationBell />

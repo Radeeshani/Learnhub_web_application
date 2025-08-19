@@ -1,18 +1,21 @@
 package com.homework.controller;
 
+import com.homework.dto.CalendarEventRequest;
+import com.homework.dto.ClassRequest;
+import com.homework.dto.ClassResponse;
+import com.homework.entity.CalendarEvent;
+import com.homework.entity.Homework;
+import com.homework.service.CalendarService;
+import com.homework.service.ClassService;
+import com.homework.service.HomeworkService;
 import com.homework.dto.HomeworkRequest;
 import com.homework.dto.HomeworkSubmissionRequest;
 import com.homework.dto.HomeworkSubmissionResponse;
-import com.homework.entity.Homework;
 import com.homework.entity.User;
-import com.homework.service.HomeworkService;
 import com.homework.service.HomeworkSubmissionService;
 import com.homework.service.UserService;
 import com.homework.entity.Notification;
 import com.homework.service.NotificationService;
-import com.homework.dto.CalendarEventRequest;
-import com.homework.entity.CalendarEvent;
-import com.homework.service.CalendarService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/homework")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class HomeworkController {
     
     private static final Logger logger = LoggerFactory.getLogger(HomeworkController.class);
@@ -48,50 +52,30 @@ public class HomeworkController {
     @Autowired
     private CalendarService calendarService;
     
+    @Autowired
+    private ClassService classService;
+    
     // Calendar endpoints
     @GetMapping("/calendar/test")
     public ResponseEntity<String> calendarTest() {
         return ResponseEntity.ok("Calendar endpoints are working from HomeworkController!");
     }
-    
+
     @GetMapping("/calendar/events")
-    public ResponseEntity<?> getCalendarEvents(
-            @RequestParam(required = false) String view) {
+    public ResponseEntity<?> getCalendarEvents() {
         try {
             // For now, get events for user ID 1 (first student)
-            List<CalendarEvent> events;
-            
-            if ("today".equals(view)) {
-                events = calendarService.getTodayEvents(1L);
-            } else if ("week".equals(view)) {
-                events = calendarService.getWeekEvents(1L);
-            } else if ("month".equals(view)) {
-                events = calendarService.getMonthEvents(1L);
-            } else {
-                // Default to upcoming events (next 30 days)
-                events = calendarService.getUpcomingEvents(1L, 30);
-            }
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Calendar events retrieved successfully");
-            response.put("view", view);
-            response.put("events", events);
-            
-            return ResponseEntity.ok(response);
+            List<CalendarEvent> events = calendarService.getUpcomingEvents(1L, 30);
+            return ResponseEntity.ok(events);
         } catch (Exception e) {
-            logger.error("Failed to fetch calendar events", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to fetch calendar events: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body("Error retrieving calendar events: " + e.getMessage());
         }
     }
-    
-    // Create calendar event
+
     @PostMapping("/calendar/events")
     public ResponseEntity<?> createCalendarEvent(@RequestBody CalendarEventRequest request) {
         try {
-            // For now, create event for user ID 1 (first student)
-            // In a real system, this would extract user ID from JWT token
+            // Convert request to entity and create event
             CalendarEvent event = new CalendarEvent();
             event.setTitle(request.getTitle());
             event.setDescription(request.getDescription());
@@ -108,20 +92,12 @@ public class HomeworkController {
             event.setRecurrencePattern(request.getRecurrencePattern());
             
             CalendarEvent savedEvent = calendarService.createEvent(event);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("message", "Calendar event created successfully");
-            result.put("event", savedEvent);
-            
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(savedEvent);
         } catch (Exception e) {
-            logger.error("Failed to create calendar event", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to create calendar event: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body("Error creating calendar event: " + e.getMessage());
         }
     }
-    
+
     // Get calendar events with different views
     @GetMapping("/calendar/events/view")
     public ResponseEntity<?> getCalendarEventsByView(
@@ -129,7 +105,6 @@ public class HomeworkController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         try {
-            // For now, get events for user ID 1 (first student)
             List<CalendarEvent> events;
             
             if ("today".equals(view)) {
@@ -147,58 +122,33 @@ public class HomeworkController {
                 events = calendarService.getUpcomingEvents(1L, 30);
             }
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Calendar events retrieved successfully");
-            response.put("view", view);
-            response.put("events", events);
-            
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(events);
         } catch (Exception e) {
-            logger.error("Failed to fetch calendar events", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to fetch calendar events: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body("Error retrieving calendar events: " + e.getMessage());
         }
     }
-    
+
     // Search calendar events
     @GetMapping("/calendar/search")
     public ResponseEntity<?> searchCalendarEvents(@RequestParam String query) {
         try {
             // For now, search events for user ID 1 (first student)
             List<CalendarEvent> events = calendarService.searchEvents(1L, query);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Search completed successfully");
-            response.put("query", query);
-            response.put("events", events);
-            
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(events);
         } catch (Exception e) {
-            logger.error("Failed to search calendar events", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to search calendar events: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body("Error searching calendar events: " + e.getMessage());
         }
     }
-    
+
     // Get calendar summary
     @GetMapping("/calendar/summary")
     public ResponseEntity<?> getCalendarSummary() {
         try {
             // For now, get summary for user ID 1 (first student)
             java.util.Map<CalendarEvent.EventType, Long> summary = calendarService.getCalendarSummary(1L);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Calendar summary retrieved successfully");
-            response.put("summary", summary);
-            
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(summary);
         } catch (Exception e) {
-            logger.error("Failed to get calendar summary", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to get calendar summary: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body("Error getting calendar summary: " + e.getMessage());
         }
     }
     
@@ -663,5 +613,101 @@ public class HomeworkController {
             logger.error("Failed to create test notification", e);
             return ResponseEntity.badRequest().body("Error creating test notification: " + e.getMessage());
         }
+    }
+    
+    // Class Management endpoints
+    @PostMapping("/classes")
+    public ResponseEntity<?> createClass(@RequestBody ClassRequest request) {
+        try {
+            ClassResponse newClass = classService.createClass(request);
+            return ResponseEntity.ok(newClass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error creating class: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/{classId}")
+    public ResponseEntity<?> getClassById(@PathVariable Long classId) {
+        try {
+            ClassResponse classResponse = classService.getClassById(classId);
+            return ResponseEntity.ok(classResponse);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @GetMapping("/classes/{classId}/statistics")
+    public ResponseEntity<?> getClassWithStatistics(@PathVariable Long classId) {
+        try {
+            ClassResponse classResponse = classService.getClassWithStatistics(classId);
+            return ResponseEntity.ok(classResponse);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @GetMapping("/classes/teacher/{teacherId}")
+    public ResponseEntity<?> getClassesByTeacher(@PathVariable Long teacherId) {
+        try {
+            List<ClassResponse> classes = classService.getClassesByTeacher(teacherId);
+            return ResponseEntity.ok(classes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/student/{studentId}")
+    public ResponseEntity<?> getClassesByStudent(@PathVariable Long studentId) {
+        try {
+            List<ClassResponse> classes = classService.getClassesByStudent(studentId);
+            return ResponseEntity.ok(classes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes")
+    public ResponseEntity<?> getAllActiveClasses() {
+        try {
+            List<ClassResponse> classes = classService.getAllActiveClasses();
+            return ResponseEntity.ok(classes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/search")
+    public ResponseEntity<?> searchClasses(@RequestParam String query) {
+        try {
+            List<ClassResponse> classes = classService.searchClasses(query);
+            return ResponseEntity.ok(classes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error searching classes: " + e.getMessage());
+        }
+    }
+    
+    @PutMapping("/classes/{classId}")
+    public ResponseEntity<?> updateClass(@PathVariable Long classId, @RequestBody ClassRequest request) {
+        try {
+            ClassResponse updatedClass = classService.updateClass(classId, request);
+            return ResponseEntity.ok(updatedClass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating class: " + e.getMessage());
+        }
+    }
+    
+    @DeleteMapping("/classes/{classId}")
+    public ResponseEntity<?> deactivateClass(@PathVariable Long classId) {
+        try {
+            classService.deactivateClass(classId);
+            return ResponseEntity.ok("Class deactivated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deactivating class: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/test")
+    public ResponseEntity<String> classTest() {
+        return ResponseEntity.ok("Class endpoints are working from HomeworkController!");
     }
 } 
