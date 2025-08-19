@@ -29,6 +29,9 @@ public class HomeworkService {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private NotificationService notificationService;
+    
     private final Path uploadPath = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
@@ -63,7 +66,12 @@ public class HomeworkService {
         homework.setFileName(fileName);
         homework.setFileUrl(fileUrl);
         
-        return homeworkRepository.save(homework);
+        Homework savedHomework = homeworkRepository.save(homework);
+        
+        // Create notification for students about new homework
+        notificationService.createNewHomeworkNotification(savedHomework);
+        
+        return savedHomework;
     }
 
     public Homework updateHomework(Long id, HomeworkRequest request, MultipartFile file, String teacherEmail) throws Exception {

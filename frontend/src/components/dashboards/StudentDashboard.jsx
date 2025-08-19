@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -13,17 +14,23 @@ import {
   ArrowUpIcon,
   FunnelIcon,
   PaperClipIcon,
-  EyeIcon
+  EyeIcon,
+  CheckCircleIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [homeworks, setHomeworks] = useState([]);
+  const [submissions, setSubmissions] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('dueDate');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   const { user, token } = useAuth();
 
   const subjects = [
@@ -39,6 +46,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     fetchHomeworks();
+    fetchSubmissions();
   }, [token, sortBy, sortOrder, selectedSubject]);
 
   const fetchHomeworks = async () => {
@@ -65,6 +73,25 @@ const StudentDashboard = () => {
       console.error('Error fetching homeworks:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    try {
+                      const response = await axios.get(
+                  'http://localhost:8080/api/homework/submissions/student',
+                  {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  }
+                );
+      
+      const submissionsMap = {};
+      response.data.forEach(submission => {
+        submissionsMap[submission.homeworkId] = submission;
+      });
+      setSubmissions(submissionsMap);
+    } catch (err) {
+      console.error('Error fetching submissions:', err);
     }
   };
 
@@ -102,6 +129,26 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleSubmitHomework = (homework) => {
+    navigate('/submit-homework', { state: { homework } });
+  };
+
+  const getSubmissionStatus = (homeworkId) => {
+    const submission = submissions[homeworkId];
+    if (!submission) return { status: 'NOT_SUBMITTED', text: 'Not Submitted', class: 'bg-gray-100 text-gray-800' };
+    
+    switch (submission.status) {
+      case 'SUBMITTED':
+        return { status: 'SUBMITTED', text: 'Submitted', class: 'bg-blue-100 text-blue-800' };
+      case 'GRADED':
+        return { status: 'GRADED', text: `Grade: ${submission.grade}%`, class: 'bg-green-100 text-green-800' };
+      case 'RETURNED':
+        return { status: 'RETURNED', text: 'Returned', class: 'bg-yellow-100 text-yellow-800' };
+      default:
+        return { status: 'UNKNOWN', text: 'Unknown', class: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -121,11 +168,8 @@ const StudentDashboard = () => {
   };
 
   const handleViewAttachment = (fileUrl) => {
-    // Extract the filename from the fileUrl (e.g., "/uploads/homework/filename.pdf" -> "filename.pdf")
     const fileName = fileUrl.split('/').pop();
-    // Construct the correct URL for the backend file endpoint with /api context path
     const fullUrl = `http://localhost:8080/api/uploads/homework/${fileName}`;
-    // Open in a new tab
     window.open(fullUrl, '_blank');
   };
 
@@ -253,6 +297,9 @@ const StudentDashboard = () => {
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${dueStatus.class}`}>
                             {dueStatus.text}
                           </span>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSubmissionStatus(homework.id).class}`}>
+                            {getSubmissionStatus(homework.id).text}
+                          </span>
                         </div>
                         <p className="mt-2 text-gray-600">{homework.description}</p>
                         <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
@@ -275,6 +322,77 @@ const StudentDashboard = () => {
                             </button>
                           )}
                         </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="mt-4 flex items-center space-x-3">
+                          {getSubmissionStatus(homework.id).status === 'NOT_SUBMITTED' && (
+                            <button
+                              onClick={() => handleSubmitHomework(homework)}
+                              className="inline-flex items-center px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors"
+                            >
+                              <DocumentTextIcon className="h-4 w-4 mr-2" />
+                              Submit Homework
+                            </button>
+                          )}
+                          
+                          {getSubmissionStatus(homework.id).status === 'SUBMITTED' && (
+                            <div className="flex items-center space-x-2 text-blue-600">
+                              <ClockIcon className="h-5 w-5" />
+                              <span className="text-sm font-medium">Submitted - Awaiting Grade</span>
+                              <button
+                                onClick={() => {
+                                  const submission = submissions[homework.id];
+                                  if (submission) {
+                                    setSelectedSubmission(submission);
+                                    setShowSubmissionModal(true);
+                                  }
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const submission = submissions[homework.id];
+                                  if (submission) {
+                                    navigate('/submit-homework', { 
+                                      state: { 
+                                        homework, 
+                                        editingSubmission: submission,
+                                        isEditing: true 
+                                      } 
+                                    });
+                                  }
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                              >
+                                Edit Submission
+                              </button>
+                              <span className="text-xs text-gray-500 ml-2">
+                                (You can edit until graded)
+                              </span>
+                            </div>
+                          )}
+                          
+                          {getSubmissionStatus(homework.id).status === 'GRADED' && (
+                            <div className="flex items-center space-x-2 text-green-600">
+                              <CheckCircleIcon className="h-5 w-5" />
+                              <span className="text-sm font-medium">Graded!</span>
+                              <button
+                                onClick={() => {
+                                  const submission = submissions[homework.id];
+                                  if (submission) {
+                                    setSelectedSubmission(submission);
+                                    setShowSubmissionModal(true);
+                                  }
+                                }}
+                                className="text-xs text-green-600 hover:text-green-700 underline"
+                              >
+                                View Grade
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -284,6 +402,245 @@ const StudentDashboard = () => {
           )}
         </motion.div>
       </div>
+      
+      {/* Submission Details Modal */}
+      {showSubmissionModal && selectedSubmission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Submission Details</h3>
+              <button 
+                onClick={() => setShowSubmissionModal(false)} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-medium text-gray-700">Homework:</span>
+                  <p className="text-gray-900">{selectedSubmission.homeworkTitle}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Subject:</span>
+                  <p className="text-gray-900">{selectedSubmission.subject}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Submitted:</span>
+                  <p className="text-gray-900">{new Date(selectedSubmission.submittedAt).toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Type:</span>
+                  <p className="text-gray-900">{selectedSubmission.submissionType}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Status:</span>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedSubmission.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
+                    selectedSubmission.status === 'GRADED' ? 'bg-green-100 text-green-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedSubmission.status}
+                  </span>
+                </div>
+                {selectedSubmission.isLate && (
+                  <div>
+                    <span className="font-medium text-gray-700">Late:</span>
+                    <span className="text-red-600 font-medium">Yes</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Editing Note */}
+              {selectedSubmission.status === 'SUBMITTED' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    💡 <strong>Tip:</strong> You can still edit this submission until it's graded by your teacher.
+                  </p>
+                </div>
+              )}
+              
+              {selectedSubmission.submissionText && (
+                <div>
+                  <span className="font-medium text-gray-700">Text Response:</span>
+                  <div className="mt-2 p-3 bg-gray-50 rounded border text-gray-900">
+                    {selectedSubmission.submissionText}
+                  </div>
+                </div>
+              )}
+              
+              {selectedSubmission.attachmentUrl && (
+                <div>
+                  <span className="font-medium text-gray-700">Attachment:</span>
+                  <div className="mt-2 p-3 bg-gray-50 rounded border">
+                    {selectedSubmission.submissionType === 'VOICE' ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Voice Recording: {selectedSubmission.attachmentName || 'voice_recording.wav'}
+                        </p>
+                        {selectedSubmission.audioData ? (
+                          <>
+                            <audio 
+                              controls 
+                              className="w-full"
+                              preload="metadata"
+                            >
+                              <source src={`data:audio/wav;base64,${selectedSubmission.audioData}`} type="audio/wav" />
+                              Your browser does not support the audio element.
+                            </audio>
+                            <p className="text-xs text-gray-500 mt-1">
+                              🎤 You can play back your voice recording to review what you submitted.
+                            </p>
+                          </>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-sm text-yellow-800">
+                              🎤 <strong>Voice Recording Submitted:</strong> This submission was created before audio playback was implemented. 
+                              You submitted a voice recording, but the audio data is not available for playback.
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              <strong>Note:</strong> New voice submissions will include audio playback functionality.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : selectedSubmission.submissionType === 'PHOTO' ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Photo: {selectedSubmission.attachmentName || 'submission_photo.jpg'}
+                        </p>
+                        {selectedSubmission.imageData ? (
+                          <>
+                            <img 
+                              src={`data:image/jpeg;base64,${selectedSubmission.imageData}`}
+                              alt="Submitted photo"
+                              className="w-full max-w-md rounded-lg border"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              📸 Your submitted photo is displayed above.
+                            </p>
+                          </>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-sm text-yellow-800">
+                              📸 <strong>Photo Submitted:</strong> This submission was created before image storage was implemented. 
+                              You submitted a photo, but the image data is not available for display.
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              <strong>Note:</strong> New photo submissions will include image display functionality.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : selectedSubmission.submissionType === 'PDF' ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 mb-2">
+                          PDF: {selectedSubmission.attachmentName || 'submission.pdf'}
+                        </p>
+                        {selectedSubmission.pdfData ? (
+                          <>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              <p className="text-sm text-gray-700 mb-2">
+                                📄 Your submitted PDF document
+                              </p>
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    // Convert base64 to blob
+                                    const byteCharacters = atob(selectedSubmission.pdfData);
+                                    const byteNumbers = new Array(byteCharacters.length);
+                                    for (let i = 0; i < byteCharacters.length; i++) {
+                                      byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                    }
+                                    const byteArray = new Uint8Array(byteNumbers);
+                                    const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                    
+                                    // Create blob URL
+                                    const url = window.URL.createObjectURL(blob);
+                                    
+                                    // Open PDF in new tab
+                                    window.open(url, '_blank');
+                                    
+                                    // Clean up blob URL after a delay
+                                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                  } catch (error) {
+                                    console.error('Error opening PDF:', error);
+                                    alert('Error opening PDF. Please try again.');
+                                  }
+                                }}
+                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                📄 View PDF Document
+                              </button>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Click the button above to open your PDF in a new tab.
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-sm text-yellow-800">
+                              📄 <strong>PDF Submitted:</strong> This submission was created before PDF storage was implemented. 
+                              You submitted a PDF, but the document data is not available for viewing.
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              <strong>Note:</strong> New PDF submissions will include document viewing functionality.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <a 
+                        href={selectedSubmission.attachmentUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sky-600 hover:text-sky-700 font-medium"
+                      >
+                        {selectedSubmission.attachmentName || 'View Attachment'}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {selectedSubmission.status === 'GRADED' && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-green-900 mb-2">Grade & Feedback</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <span className="font-medium text-green-700">Grade:</span>
+                      <p className="text-green-900 text-lg font-bold">{selectedSubmission.grade}%</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-green-700">Graded on:</span>
+                      <p className="text-green-900">{new Date(selectedSubmission.gradedAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {selectedSubmission.feedback && (
+                    <div>
+                      <span className="font-medium text-green-700">Feedback:</span>
+                      <p className="text-green-900 mt-2">{selectedSubmission.feedback}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              <button 
+                onClick={() => setShowSubmissionModal(false)} 
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

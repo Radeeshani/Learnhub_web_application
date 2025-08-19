@@ -41,9 +41,6 @@ public class Homework {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @Column(name = "completed")
-    private boolean completed = false;
-    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -143,13 +140,5 @@ public class Homework {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-    
-    public boolean isCompleted() {
-        return completed;
-    }
-    
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
     }
 } 

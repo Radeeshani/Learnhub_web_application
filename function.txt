@@ -1,0 +1,91 @@
+Objective
+The system aims to:
+1. Streamline Homework Management
+− Create a unified digital platform to replace fragmented communication methods (paper, WhatsApp, email) for assigning, submitting, and tracking homework.
+− This eliminates lost assignments and reduces administrative overhead for teachers while giving parents real-time visibility.
+ 
+2. Enhance Accessibility for Young Learners
+− Enable voice/photo submissions to accommodate primary students' limited typing skills.
+− Ensures equitable participation regardless of literacy level or tech access.
+ 
+3. Automated Progress Tracking
+− Provide real-time dashboards showing completion status, grades, and teacher feedback
+− Eliminates manual progress tracking efforts
+ 
+4. Boost Engagement Through Gamification
+− Implement a reward system (badges/points) for on-time submissions to motivate consistent participation.
+− Addresses Sri Lanka's 42% homework non-completion rate by making tasks interactive.
+ 
+5. School-Home Communication Hub
+− Integrate event calendars, reminders and performance reports in one platform
+− Streamlines parent-teacher communication (reducing missed meetings by 30% as per your pilot data)
+ 
+Solutions
+The system addressed here fulfills these needs by:
+Unified Homework Management Platform
+− Role-specific dashboards for teachers (assignment creation), parents (progress tracking), and admins (user management)
+− Centralized repository for all homework materials (PDFs, videos, worksheets) with subject-wise categorization
+− Automated submission tracking to identify missing work (replaces manual spreadsheets)
+ 
+Child-Centric Submission Options
+− Voice recording tool integrated directly into the submission interface
+− Simplified UI with large buttons and minimal text for young learners
+ 
+Real-Time Progress Visualization
+− Automated gradebooks with color-coded completion status (green=submitted, red=missing)
+− Weekly email digests to parents summarizing pending/completed work
+ 
+Gamified Motivation System
+− Point-based rewards for on-time submissions
+− Tiered badges (Bronze/Silver/Gold) based on consistency
+ 
+Integrated Communication Tools
+− Shared school calendar with automatic reminders
+− Push notifications for deadline alerts (customizable timing)Functional Requirements
+
+
+Functional Requirements
+These define what the system must do:
+
+Core Functions 
+Feature	Description
+Homework Assignment Upload	Teachers upload homework with due dates, instructions, and attachments (PDF, images, videos). Includes subject categorization (e.g., Math, English).
+Due Date Reminders	Automatic alerts/reminders sent before homework due dates to students/parents. Teachers reminded if submission is missing.
+Homework Submission (Online)	Students can submit homework as text, photos, voice recordings, or PDFs.
+Progress Tracker	Students/Parents can see completed, pending homework, grades, and feedback.
+Gamification & Rewards	Stars, badges, or points awarded for on-time or quality submissions to encourage engagement.
+Secure Login	Secure login for Admin, Teacher, Student/Parent. Includes privacy controls.
+Voice/Image Submission for Students	Younger students can submit work using voice or photo instead of typing.
+
+Teacher-Side Functionalities
+Feature	Description
+Create/Edit Homework (CRUD)	Teachers create, update, delete homework tasks.
+Assign Homework to Class	Assign homework to specific classes/groups.
+View Homework Status	Track which students have completed or not completed homework.
+Send Event Notices	Announce events (PT meetings, school events).
+Set Homework Reminders	Set reminders for students and parents.
+Send Homework Notifications	Notify students/parents about new homework.
+Homework Analytics	Track homework completion, engagement, frequent mistakes.
+Resource Library	Upload videos, notes, worksheets for specific grades or subjects.
+Student Performance Report	Weekly visual report to parents showing completion rate, subjects needing improvement.
+
+Parent-Student side Functionalities
+Feature	Description
+Mark Homework as Completed	Parents can mark homework as done on behalf of student.
+View Assigned Homework	View homework assigned by teachers.
+Set Personal Reminders (CRUD)	Parents set custom reminders for tasks/homework.
+View Special Events	View upcoming school events and announcements.
+Receive Notifications	Get all notifications (events, homework, reminders).
+Integrated Calendar View	View all events, homework, deadlines, and meetings in one calendar.
+Smart Reminders & Alerts	Auto alerts for homework deadlines.
+Gamified Progress	View earned rewards, stars, and points.
+Voice/Image Submission	Students can submit homework using voice recordings or photos.
+
+Admin side Functions
+Feature	Description
+Manage Parents (CRUD)	Create, update, delete parent accounts.
+Manage Classes (CRUD)	Add, edit, remove classes.
+Manage Teachers (CRUD)	Manage teacher profiles and access.
+Monitor Homework Progress	View overall homework statistics and student progress.
+Send Global Notifications	Send important announcements or alerts to all users.
+Manage calendars	Manage Calander with events.

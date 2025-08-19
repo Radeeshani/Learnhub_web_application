@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -9,6 +10,23 @@ const Header = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const getUserRoleDisplay = () => {
+    if (!user?.role) return '';
+    
+    switch (user.role) {
+      case 'ADMIN':
+        return '👑 Administrator';
+      case 'TEACHER':
+        return '👨‍🏫 Teacher';
+      case 'STUDENT':
+        return '👨‍🎓 Student';
+      case 'PARENT':
+        return '👨‍👩‍👧‍👦 Parent';
+      default:
+        return user.role;
+    }
   };
 
   return (
@@ -22,9 +40,20 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              Welcome, {user?.firstName} {user?.lastName}
+            {/* Notification Bell */}
+            <NotificationBell />
+            
+            {/* User Info */}
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">
+                {user?.firstName} {user?.lastName}
+              </div>
+              <div className="text-xs text-gray-500">
+                {getUserRoleDisplay()}
+              </div>
             </div>
+            
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"

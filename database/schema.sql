@@ -1,98 +1,38 @@
--- Use the homework database
+-- Create database
+CREATE DATABASE IF NOT EXISTS homework_db;
 USE homework_db;
 
--- Drop existing tables in reverse order of dependencies
-DROP TABLE IF EXISTS homework_submissions;
-DROP TABLE IF EXISTS homework;
-DROP TABLE IF EXISTS student_classes;
-DROP TABLE IF EXISTS classes;
-DROP TABLE IF EXISTS subjects;
-DROP TABLE IF EXISTS student_parent;
-DROP TABLE IF EXISTS users;
-
--- Table: Users (for all user types)
+-- Users table
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(1024) NOT NULL,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL,
-    phone_number VARCHAR(20),
-    class_grade VARCHAR(10),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('ADMIN', 'TEACHER', 'STUDENT', 'PARENT') NOT NULL,
+    class_grade VARCHAR(20),
     subject_taught VARCHAR(100),
-    student_id VARCHAR(50),
     parent_of_student_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_of_student_id) REFERENCES users(id)
 );
 
--- Table: Student-Parent relationships
-CREATE TABLE student_parent (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    student_id BIGINT NOT NULL,
-    parent_id BIGINT NOT NULL,
-    relationship_type ENUM('FATHER', 'MOTHER', 'GUARDIAN') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_student_parent (student_id, parent_id)
-);
-
--- Table: Subjects
-CREATE TABLE subjects (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    color VARCHAR(7) DEFAULT '#0ea5e9', -- Hex color code
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- Table: Classes/Grades
-CREATE TABLE classes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    grade_level INT NOT NULL,
-    academic_year VARCHAR(9) NOT NULL, -- e.g., '2023-2024'
-    teacher_id BIGINT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
--- Table: Student-Class enrollment
-CREATE TABLE student_classes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    student_id BIGINT NOT NULL,
-    class_id BIGINT NOT NULL,
-    enrollment_date DATE NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_student_class (student_id, class_id)
-);
-
--- Table: Homework assignments
-CREATE TABLE homework (
+-- Homeworks table
+CREATE TABLE homeworks (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     subject VARCHAR(100) NOT NULL,
-    class_grade VARCHAR(10) NOT NULL,
+    class_grade VARCHAR(20) NOT NULL,
     due_date TIMESTAMP NOT NULL,
-    file_url VARCHAR(255),
-    file_name VARCHAR(255),
     teacher_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- Table: Homework submissions
+-- Homework submissions table
 CREATE TABLE homework_submissions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     homework_id BIGINT NOT NULL,
@@ -100,58 +40,51 @@ CREATE TABLE homework_submissions (
     submission_text TEXT,
     attachment_url VARCHAR(500),
     attachment_name VARCHAR(255),
+    audio_data LONGTEXT, -- Store base64 encoded audio data for voice recordings
+    image_data LONGTEXT, -- Store base64 encoded image data for photo submissions
+    pdf_data LONGTEXT, -- Store base64 encoded PDF data for PDF submissions
+    submission_type ENUM('TEXT', 'VOICE', 'PHOTO', 'PDF', 'MIXED'),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_late BOOLEAN DEFAULT FALSE,
     grade INT,
     feedback TEXT,
     graded_at TIMESTAMP NULL,
-    graded_by BIGINT,
+    graded_by BIGINT NULL,
     status ENUM('SUBMITTED', 'GRADED', 'RETURNED') DEFAULT 'SUBMITTED',
-    FOREIGN KEY (homework_id) REFERENCES homework(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL,
-    UNIQUE KEY unique_homework_student (homework_id, student_id)
+    FOREIGN KEY (homework_id) REFERENCES homeworks(id),
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    FOREIGN KEY (graded_by) REFERENCES users(id)
 );
 
--- Table: Announcements
-CREATE TABLE IF NOT EXISTS announcements (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    author_id BIGINT NOT NULL,
-    class_id BIGINT,
-    priority ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
-    is_active BOOLEAN DEFAULT TRUE,
-    publish_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expire_date DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
-);
-
--- Table: Support/Feedback requests
-CREATE TABLE IF NOT EXISTS support_requests (
+-- Notifications table
+CREATE TABLE notifications (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    subject VARCHAR(200) NOT NULL,
-    message TEXT NOT NULL,
-    category ENUM('TECHNICAL', 'ACADEMIC', 'GENERAL', 'COMPLAINT') DEFAULT 'GENERAL',
-    status ENUM('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED') DEFAULT 'OPEN',
-    priority ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
-    admin_response TEXT,
-    responded_by BIGINT,
-    responded_at TIMESTAMP NULL,
+    type ENUM('DUE_SOON', 'OVERDUE', 'GRADED', 'NEW_HOMEWORK', 'SUBMISSION_RECEIVED', 'REMINDER', 'SYSTEM') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    homework_id BIGINT,
+    homework_title VARCHAR(255),
+    read_status BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (responded_by) REFERENCES users(id) ON DELETE SET NULL
+    read_at TIMESTAMP NULL,
+    priority ENUM('LOW', 'NORMAL', 'HIGH', 'URGENT') DEFAULT 'NORMAL',
+    action_url VARCHAR(500),
+    action_text VARCHAR(100),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (homework_id) REFERENCES homeworks(id)
 );
 
--- Create indexes for better performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_homework_due_date ON homework(due_date);
-CREATE INDEX idx_homework_class_subject ON homework(class_grade);
-CREATE INDEX idx_submissions_status ON homework_submissions(status);
-CREATE INDEX idx_announcements_active_publish ON announcements(is_active, publish_date); 
+-- Insert sample data
+INSERT INTO users (first_name, last_name, email, password, role, class_grade, subject_taught) VALUES
+('John', 'Doe', 'john.doe@school.com', '$2a$10$example', 'TEACHER', 'Grade 5', 'Mathematics'),
+('Jane', 'Smith', 'jane.smith@school.com', '$2a$10$example', 'TEACHER', 'Grade 5', 'English'),
+('Mike', 'Johnson', 'mike.johnson@school.com', '$2a$10$example', 'STUDENT', 'Grade 5', NULL),
+('Sarah', 'Williams', 'sarah.williams@school.com', '$2a$10$example', 'STUDENT', 'Grade 5', NULL),
+('Admin', 'User', 'admin@school.com', '$2a$10$example', 'ADMIN', NULL, NULL);
+
+-- Insert sample homeworks
+INSERT INTO homeworks (title, description, subject, class_grade, due_date, teacher_id) VALUES
+('Math Problem Set', 'Complete problems 1-20 in Chapter 3', 'Mathematics', 'Grade 5', DATE_ADD(NOW(), INTERVAL 7 DAY), 1),
+('English Essay', 'Write a 500-word essay about your favorite book', 'English', 'Grade 5', DATE_ADD(NOW(), INTERVAL 5 DAY), 2),
+('Science Project', 'Create a simple machine using household items', 'Science', 'Grade 5', DATE_ADD(NOW(), INTERVAL 10 DAY), 1); 
