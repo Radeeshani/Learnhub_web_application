@@ -698,137 +698,121 @@ const TeacherDashboard = () => {
                 </div>
               )}
               
-              {/* Attachments */}
-              {selectedSubmission.attachmentUrl && (
+              {/* Attachments Section */}
+              {(selectedSubmission.audioData || selectedSubmission.imageData || selectedSubmission.pdfData || selectedSubmission.attachmentUrl) && (
                 <div className="mt-4">
-                  <span className="font-medium text-gray-700">Attachment:</span>
-                  <div className="mt-2 p-3 bg-white rounded border">
-                    {selectedSubmission.submissionType === 'VOICE' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          Voice Recording: {selectedSubmission.attachmentName || 'voice_recording.wav'}
-                        </p>
-                        {selectedSubmission.audioData ? (
-                          <>
-                            <audio 
-                              controls 
-                              className="w-full"
-                              preload="metadata"
-                            >
-                              <source src={`data:audio/wav;base64,${selectedSubmission.audioData}`} type="audio/wav" />
-                              Your browser does not support the audio element.
-                            </audio>
-                            <p className="text-xs text-gray-500 mt-1">
-                              🎤 Listen to the student's voice recording.
-                            </p>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              🎤 <strong>Voice Recording Submitted:</strong> This submission was created before audio playback was implemented. 
-                              The student submitted a voice recording, but the audio data is not available for playback.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New voice submissions will include audio playback functionality.
-                            </p>
-                          </div>
-                        )}
+                  <span className="font-medium text-gray-700">Attachments:</span>
+                  <div className="mt-2 space-y-4">
+                    
+                    {/* Voice Recording */}
+                    {selectedSubmission.audioData && (
+                      <div className="p-3 bg-white rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            🎤 Voice Recording: {selectedSubmission.attachmentName || 'voice_recording.wav'}
+                          </p>
+                          <audio 
+                            controls 
+                            className="w-full"
+                            preload="metadata"
+                          >
+                            <source src={`data:audio/wav;base64,${selectedSubmission.audioData}`} type="audio/wav" />
+                            Your browser does not support the audio element.
+                          </audio>
+                          <p className="text-xs text-gray-500 mt-1">
+                            🎤 Listen to the student's voice recording.
+                          </p>
+                        </div>
                       </div>
-                    ) : selectedSubmission.submissionType === 'PHOTO' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          Photo: {selectedSubmission.attachmentName || 'submission_photo.jpg'}
-                        </p>
-                        {selectedSubmission.imageData ? (
-                          <>
-                            <img 
-                              src={`data:image/jpeg;base64,${selectedSubmission.imageData}`}
-                              alt="Submitted photo"
-                              className="w-full max-w-md rounded-lg border"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              📸 Student's submitted photo is displayed above.
-                            </p>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              📸 <strong>Photo Submitted:</strong> This submission was created before image storage was implemented. 
-                              The student submitted a photo, but the image data is not available for display.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New photo submissions will include image display functionality.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : selectedSubmission.submissionType === 'PDF' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          PDF: {selectedSubmission.attachmentName || 'submission.pdf'}
-                        </p>
-                        {selectedSubmission.pdfData ? (
-                          <>
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                              <p className="text-sm text-gray-700 mb-2">
-                                📄 Student's submitted PDF document
-                              </p>
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    // Convert base64 to blob
-                                    const byteCharacters = atob(selectedSubmission.pdfData);
-                                    const byteNumbers = new Array(byteCharacters.length);
-                                    for (let i = 0; i < byteCharacters.length; i++) {
-                                      byteNumbers[i] = byteCharacters.charCodeAt(i);
-                                    }
-                                    const byteArray = new Uint8Array(byteNumbers);
-                                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                                    
-                                    // Create blob URL
-                                    const url = window.URL.createObjectURL(blob);
-                                    
-                                    // Open PDF in new tab
-                                    window.open(url, '_blank');
-                                    
-                                    // Clean up blob URL after a delay
-                                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                  } catch (error) {
-                                    console.error('Error opening PDF:', error);
-                                    alert('Error opening PDF. Please try again.');
-                                  }
-                                }}
-                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                              >
-                                📄 View PDF Document
-                              </button>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Click the button above to open the PDF in a new tab.
-                              </p>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              📄 <strong>PDF Submitted:</strong> This submission was created before PDF storage was implemented. 
-                              The student submitted a PDF, but the document data is not available for viewing.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New PDF submissions will include document viewing functionality.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <a 
-                        href={selectedSubmission.attachmentUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sky-600 hover:text-sky-700 font-medium"
-                      >
-                        {selectedSubmission.attachmentName || 'View Attachment'}
-                      </a>
                     )}
+                    
+                    {/* Photo/Image */}
+                    {selectedSubmission.imageData && (
+                      <div className="p-3 bg-white rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            📸 Photo: {selectedSubmission.attachmentName || 'submission_photo.jpg'}
+                          </p>
+                          <img 
+                            src={`data:image/jpeg;base64,${selectedSubmission.imageData}`}
+                            alt="Submitted photo"
+                            className="w-full max-w-md rounded-lg border"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            📸 Student's submitted photo is displayed above.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* PDF Document */}
+                    {selectedSubmission.pdfData && (
+                      <div className="p-3 bg-white rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            📄 PDF: {selectedSubmission.attachmentName || 'submission.pdf'}
+                          </p>
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <p className="text-sm text-gray-700 mb-2">
+                              📄 Student's submitted PDF document
+                            </p>
+                            <button 
+                              onClick={() => {
+                                try {
+                                  // Convert base64 to blob
+                                  const byteCharacters = atob(selectedSubmission.pdfData);
+                                  const byteNumbers = new Array(byteCharacters.length);
+                                  for (let i = 0; i < byteCharacters.length; i++) {
+                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                  }
+                                  const byteArray = new Uint8Array(byteNumbers);
+                                  const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                  
+                                  // Create blob URL
+                                  const url = window.URL.createObjectURL(blob);
+                                  
+                                  // Open PDF in new tab
+                                  window.open(url, '_blank');
+                                  
+                                  // Clean up blob URL after a delay
+                                  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                } catch (error) {
+                                  console.error('Error opening PDF:', error);
+                                  alert('Error opening PDF. Please try again.');
+                                }
+                              }}
+                              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              📄 View PDF Document
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Click the button above to open the PDF in a new tab.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Generic Attachment URL */}
+                    {selectedSubmission.attachmentUrl && !selectedSubmission.audioData && !selectedSubmission.imageData && !selectedSubmission.pdfData && (
+                      <div className="p-3 bg-white rounded border">
+                        <p className="text-sm text-gray-600 mb-2">
+                          📎 Attachment: {selectedSubmission.attachmentName || 'submission_attachment'}
+                        </p>
+                        <a 
+                          href={selectedSubmission.attachmentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-2 bg-sky-600 text-white text-sm rounded-lg hover:bg-sky-700 transition-colors"
+                        >
+                          📎 View Attachment
+                        </a>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Click the button above to open the attachment in a new tab.
+                        </p>
+                      </div>
+                    )}
+                    
                   </div>
                 </div>
               )}
@@ -952,16 +936,19 @@ const TeacherDashboard = () => {
                       </div>
                     )}
                     
-                    {submission.attachmentUrl && (
+                    {/* Attachments Section */}
+                    {(submission.audioData || submission.imageData || submission.pdfData || submission.attachmentUrl) && (
                       <div className="mb-3">
-                        <span className="font-medium text-gray-700 text-sm">Attachment:</span>
-                        {submission.submissionType === 'VOICE' ? (
-                          <div className="mt-2 space-y-2">
-                            <p className="text-sm text-gray-600">
-                              Voice Recording: {submission.attachmentName || 'voice_recording.wav'}
-                            </p>
-                            {submission.audioData ? (
-                              <>
+                        <span className="font-medium text-gray-700 text-sm">Attachments:</span>
+                        <div className="mt-2 space-y-3">
+                          
+                          {/* Voice Recording */}
+                          {submission.audioData && (
+                            <div className="p-2 bg-gray-50 rounded border">
+                              <div className="space-y-2">
+                                <p className="text-sm text-gray-600">
+                                  🎤 Voice Recording: {submission.attachmentName || 'voice_recording.wav'}
+                                </p>
                                 <audio 
                                   controls 
                                   className="w-full"
@@ -973,22 +960,17 @@ const TeacherDashboard = () => {
                                 <p className="text-xs text-gray-500">
                                   🎤 Listen to voice recording
                                 </p>
-                              </>
-                            ) : (
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                                <p className="text-xs text-yellow-800">
-                                  🎤 Legacy voice submission (no audio playback)
-                                </p>
                               </div>
-                            )}
-                          </div>
-                        ) : submission.submissionType === 'PHOTO' ? (
-                          <div className="mt-2 space-y-2">
-                            <p className="text-sm text-gray-600">
-                              Photo: {submission.attachmentName || 'submission_photo.jpg'}
-                            </p>
-                            {submission.imageData ? (
-                              <>
+                            </div>
+                          )}
+                          
+                          {/* Photo/Image */}
+                          {submission.imageData && (
+                            <div className="p-2 bg-gray-50 rounded border">
+                              <div className="space-y-2">
+                                <p className="text-sm text-gray-600">
+                                  📸 Photo: {submission.attachmentName || 'submission_photo.jpg'}
+                                </p>
                                 <img 
                                   src={`data:image/jpeg;base64,${submission.imageData}`}
                                   alt="Submitted photo"
@@ -997,22 +979,17 @@ const TeacherDashboard = () => {
                                 <p className="text-xs text-gray-500">
                                   📸 View photo
                                 </p>
-                              </>
-                            ) : (
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                                <p className="text-xs text-yellow-800">
-                                  📸 Legacy photo submission (no image display)
-                                </p>
                               </div>
-                            )}
-                          </div>
-                        ) : submission.submissionType === 'PDF' ? (
-                          <div className="mt-2 space-y-2">
-                            <p className="text-sm text-gray-600">
-                              PDF: {submission.attachmentName || 'submission.pdf'}
-                            </p>
-                            {submission.pdfData ? (
-                              <>
+                            </div>
+                          )}
+                          
+                          {/* PDF Document */}
+                          {submission.pdfData && (
+                            <div className="p-2 bg-gray-50 rounded border">
+                              <div className="space-y-2">
+                                <p className="text-sm text-gray-600">
+                                  📄 PDF: {submission.attachmentName || 'submission.pdf'}
+                                </p>
                                 <button 
                                   onClick={() => {
                                     try {
@@ -1045,25 +1022,31 @@ const TeacherDashboard = () => {
                                 <p className="text-xs text-gray-500">
                                   Click to open PDF document
                                 </p>
-                              </>
-                            ) : (
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                                <p className="text-xs text-yellow-800">
-                                  📄 Legacy PDF submission (no document viewing)
-                                </p>
                               </div>
-                            )}
-                          </div>
-                        ) : (
-                          <a 
-                            href={submission.attachmentUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sky-600 hover:text-sky-700 text-sm ml-2"
-                          >
-                            {submission.attachmentName || 'View Attachment'}
-                          </a>
-                        )}
+                            </div>
+                          )}
+                          
+                          {/* Generic Attachment URL */}
+                          {submission.attachmentUrl && !submission.audioData && !submission.imageData && !submission.pdfData && (
+                            <div className="p-2 bg-gray-50 rounded border">
+                              <p className="text-sm text-gray-600">
+                                📎 Attachment: {submission.attachmentName || 'submission_attachment'}
+                              </p>
+                              <a 
+                                href={submission.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-2 py-1 bg-sky-600 text-white text-xs rounded hover:bg-sky-700 transition-colors"
+                              >
+                                📎 View Attachment
+                              </a>
+                              <p className="text-xs text-gray-500">
+                                Click to open attachment
+                              </p>
+                            </div>
+                          )}
+                          
+                        </div>
                       </div>
                     )}
                     
