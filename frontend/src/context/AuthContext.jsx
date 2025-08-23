@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Configure axios defaults globally
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = 'http://localhost:8080';
+// axios.defaults.baseURL = 'http://localhost:8080'; // Using proxy instead
 
 const AuthContext = createContext();
 
@@ -57,9 +57,9 @@ export const AuthProvider = ({ children }) => {
       const userData = response.data;
       
       // Store user data and token
-      setToken(email);
+      setToken(userData.token);
       setUser(userData);
-      localStorage.setItem('token', email);
+      localStorage.setItem('token', userData.token);
       localStorage.setItem('user', JSON.stringify(userData));
 
       return { success: true, userData };

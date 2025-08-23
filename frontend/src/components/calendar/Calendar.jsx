@@ -39,7 +39,7 @@ const Calendar = () => {
     
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8080/api/homework/calendar/events?view=${view}`, {
+              const response = await fetch(`/api/homework/calendar/events?view=${view}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -68,7 +68,7 @@ const Calendar = () => {
       setLoading(true);
       // For now, we'll implement search in the backend later
       // For now, just fetch all events and filter client-side
-      const response = await fetch(`http://localhost:8080/api/homework/calendar/events`, {
+              const response = await fetch(`/api/homework/calendar/events`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -101,7 +101,7 @@ const Calendar = () => {
     
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8080/api/homework/calendar/events', {
+              const response = await fetch('/api/homework/calendar/events', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

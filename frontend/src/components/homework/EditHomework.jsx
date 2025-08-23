@@ -85,7 +85,7 @@ const EditHomework = () => {
         type: 'application/json'
       }));
 
-      await axios.put(`http://localhost:8080/api/homework/${id}`, formPayload, {
+             await axios.put(`/api/homework/${id}`, formPayload, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -94,7 +94,7 @@ const EditHomework = () => {
 
       setSuccess(true);
       setTimeout(() => {
-        navigate('/teacher', { state: { message: 'Assignment updated successfully!' } });
+        navigate('/teacher', { state: { message: 'Homework updated successfully!' } });
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update homework');
@@ -140,7 +140,7 @@ const EditHomework = () => {
                 className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-center"
               >
                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                Assignment updated successfully! Redirecting...
+                Homework updated successfully! Redirecting...
               </motion.div>
             )}
 
@@ -222,9 +222,9 @@ const EditHomework = () => {
                       className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
                     >
                       <option value="">Select Grade</option>
-                      {[...Array(10)].map((_, index) => (
-                        <option key={index + 1} value={index + 1}>
-                          Grade {index + 1}
+                      {['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade'].map((grade, index) => (
+                        <option key={index + 1} value={grade}>
+                          {grade}
                         </option>
                       ))}
                     </select>

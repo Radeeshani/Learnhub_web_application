@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -54,6 +56,9 @@ public class HomeworkController {
     
     @Autowired
     private ClassService classService;
+    
+    @Autowired
+    private com.homework.security.JwtTokenProvider jwtTokenProvider;
     
     // Calendar endpoints
     @GetMapping("/calendar/test")
@@ -154,14 +159,51 @@ public class HomeworkController {
     
     @PostMapping
     public ResponseEntity<?> createHomework(
-            @RequestParam("file") MultipartFile file,
-            @Valid @RequestPart("homework") HomeworkRequest request,
+            @RequestParam(value = "title", required = true) String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "subject", required = true) String subject,
+            @RequestParam(value = "classGrade", required = true) String classGrade,
+            @RequestParam(value = "dueDate", required = true) String dueDate,
+            @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String teacherEmail = authHeader.substring(7); // Remove "Bearer " prefix
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            
+            // Import and use JwtTokenProvider to extract email
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
+            
             logger.debug("Creating homework for teacher: {}", teacherEmail);
             
-            Homework homework = homeworkService.createHomework(request, file, teacherEmail);
+            // Create HomeworkRequest from individual parameters
+            HomeworkRequest homeworkRequest = new HomeworkRequest();
+            homeworkRequest.setTitle(title);
+            homeworkRequest.setDescription(description);
+            homeworkRequest.setSubject(subject);
+            homeworkRequest.setClassGrade(classGrade);
+            
+            // Parse the ISO date string properly
+            LocalDateTime dueDateTime;
+            try {
+                // Try parsing with ISO format first (handles Z timezone)
+                DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
+                dueDateTime = LocalDateTime.parse(dueDate, isoFormatter);
+            } catch (DateTimeParseException e) {
+                // Fallback: try parsing without timezone
+                try {
+                    dueDateTime = LocalDateTime.parse(dueDate);
+                } catch (DateTimeParseException e2) {
+                    throw new Exception("Invalid date format. Please use format: yyyy-MM-ddTHH:mm:ss");
+                }
+            }
+            homeworkRequest.setDueDate(dueDateTime);
+            
+            Homework homework = homeworkService.createHomework(homeworkRequest, file, teacherEmail);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Homework created successfully");
@@ -185,7 +227,15 @@ public class HomeworkController {
     @GetMapping("/teacher")
     public ResponseEntity<?> getTeacherHomework(@RequestHeader("Authorization") String authHeader) {
         try {
-            String teacherEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
+            
             logger.debug("Fetching homework for teacher: {}", teacherEmail);
             
             List<Homework> homeworks = homeworkService.getTeacherHomework(teacherEmail);
@@ -207,7 +257,14 @@ public class HomeworkController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortOrder) {
         try {
-            String studentEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String studentEmail = jwtTokenProvider.getEmailFromToken(token);
             User user = userService.getUserByEmail(studentEmail);
             
             if (user.getParentOfStudentId() != null) {
@@ -234,7 +291,14 @@ public class HomeworkController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortOrder) {
         try {
-            String parentEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String parentEmail = jwtTokenProvider.getEmailFromToken(token);
             User parent = userService.getUserByEmail(parentEmail);
             
             if (parent.getParentOfStudentId() == null) {
@@ -340,14 +404,35 @@ public class HomeworkController {
     // Homework Submission Endpoints
     @PostMapping("/submit")
     public ResponseEntity<?> submitHomework(
-            @RequestPart("submission") HomeworkSubmissionRequest request,
+            @RequestParam("homeworkId") Long homeworkId,
+            @RequestParam(value = "submissionText", required = false) String submissionText,
+            @RequestParam(value = "submissionType", required = false) String submissionType,
+            @RequestParam(value = "audioData", required = false) String audioData,
+            @RequestParam(value = "imageData", required = false) String imageData,
+            @RequestParam(value = "pdfData", required = false) String pdfData,
             @RequestPart(value = "voiceFile", required = false) MultipartFile voiceFile,
             @RequestPart(value = "photoFile", required = false) MultipartFile photoFile,
             @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String studentEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String studentEmail = jwtTokenProvider.getEmailFromToken(token);
             logger.debug("Processing homework submission for student: {}", studentEmail);
+            
+            // Create HomeworkSubmissionRequest from individual parameters
+            HomeworkSubmissionRequest request = new HomeworkSubmissionRequest();
+            request.setHomeworkId(homeworkId);
+            request.setSubmissionText(submissionText);
+            request.setSubmissionType(submissionType);
+            request.setAudioData(audioData);
+            request.setImageData(imageData);
+            request.setPdfData(pdfData);
             
             // Handle file uploads if present
             if (voiceFile != null && !voiceFile.isEmpty()) {
@@ -395,10 +480,17 @@ public class HomeworkController {
     @GetMapping("/submissions/student")
     public ResponseEntity<?> getStudentSubmissions(@RequestHeader("Authorization") String authHeader) {
         try {
-            String studentEmail = authHeader.substring(7);
-            // For now, get submissions for user ID 1 (first student)
-            // In a real system, this would extract user ID from JWT token
-            List<HomeworkSubmissionResponse> submissions = submissionService.getStudentSubmissions(1L);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String studentEmail = jwtTokenProvider.getEmailFromToken(token);
+            User student = userService.getUserByEmail(studentEmail);
+            
+            List<HomeworkSubmissionResponse> submissions = submissionService.getStudentSubmissions(student.getId());
             logger.debug("Found {} submissions for student: {}", submissions.size(), studentEmail);
             return ResponseEntity.ok(submissions);
         } catch (Exception e) {
@@ -452,14 +544,35 @@ public class HomeworkController {
     @PutMapping("/submissions/{submissionId}")
     public ResponseEntity<?> updateSubmission(
             @PathVariable Long submissionId,
-            @RequestPart("submission") HomeworkSubmissionRequest request,
-            @RequestPart(value = "voiceFile", required = false) MultipartFile voiceFile,
-            @RequestPart(value = "photoFile", required = false) MultipartFile photoFile,
-            @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
+            @RequestParam(value = "homeworkId", required = false) Long homeworkId,
+            @RequestParam(value = "submissionText", required = false) String submissionText,
+            @RequestParam(value = "submissionType", required = false) String submissionType,
+            @RequestParam(value = "audioData", required = false) String audioData,
+            @RequestParam(value = "imageData", required = false) String imageData,
+            @RequestParam(value = "pdfData", required = false) String pdfData,
+            @RequestParam(value = "voiceFile", required = false) MultipartFile voiceFile,
+            @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+            @RequestParam(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String studentEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String studentEmail = jwtTokenProvider.getEmailFromToken(token);
             logger.debug("Updating homework submission {} for student: {}", submissionId, studentEmail);
+            
+            // Create the request object from individual parameters
+            HomeworkSubmissionRequest request = new HomeworkSubmissionRequest();
+            if (homeworkId != null) request.setHomeworkId(homeworkId);
+            if (submissionText != null) request.setSubmissionText(submissionText);
+            if (submissionType != null) request.setSubmissionType(submissionType);
+            if (audioData != null) request.setAudioData(audioData);
+            if (imageData != null) request.setImageData(imageData);
+            if (pdfData != null) request.setPdfData(pdfData);
             
             // Handle file uploads if present
             if (voiceFile != null && !voiceFile.isEmpty()) {

@@ -1,83 +1,75 @@
-# 📚 Homework Application for Primary Education
+# Homework Application for Primary Education
 
-A comprehensive full-stack application designed to streamline homework management in primary education settings.
+A comprehensive web application designed for primary education institutions to manage homework assignments, student submissions, and educational activities.
 
-## 🎨 Design Theme
+## Features
 
-- **Primary Color**: #0ea5e9 (Sky Blue)
-- **Accent Color**: #1e3a8a (Indigo) 
-- **Background**: #f0f9ff (Light Blue)
-- **Typography**: Poppins font family
-- **UI Style**: Card-based layouts with soft shadows and rounded corners
+- **User Management**: Support for Admin, Teacher, Student, and Parent roles
+- **Homework Management**: Create, assign, and track homework assignments
+- **Submission System**: Multiple submission types (text, voice, photo, PDF)
+- **Grading System**: Grade assignments and provide feedback
+- **Class Management**: Organize students into classes with enrollments
+- **Calendar Integration**: Track due dates and educational events
+- **Gamification**: Badge system and progress tracking
+- **Notifications**: Real-time notifications for various events
+- **File Upload**: Support for various file types and attachments
 
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 18** with Vite
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **Heroicons** for iconography
-- **React Router** for navigation
-- **Axios** for API communication
+## Technology Stack
 
 ### Backend
-- **Java 21** with Spring Boot 3.2
-- **Spring Web** for REST APIs
-- **Spring Data JPA** for database operations
+- **Java 17** with **Spring Boot 3.2.0**
 - **Spring Security** with JWT authentication
+- **Spring Data JPA** for data persistence
 - **MySQL** database
+- **Maven** for dependency management
 
-## 📁 Project Structure
+### Frontend
+- **React 18** with **Vite** build tool
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Axios** for HTTP requests
+- **Framer Motion** for animations
 
-```
-Homework Application for Primary Education/
-├── backend/                 # Java Spring Boot application
-│   ├── src/main/java/
-│   ├── src/main/resources/
-│   └── pom.xml
-├── frontend/                # React Vite application
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.js
-└── database/                # MySQL scripts
-    ├── create_database.sql
-    ├── schema.sql
-    └── sample_data.sql
-```
+## Prerequisites
 
-## 🚀 Quick Start
+- Java 17 or higher
+- Node.js 16 or higher
+- MySQL 8.0 or higher
+- Maven 3.6 or higher
 
-### Prerequisites
-- Java 21 or higher
-- Node.js 18+ and npm
-- MySQL 8.0+
-- Git
+## Quick Start
 
 ### 1. Database Setup
+
+First, ensure MySQL is running and create the database:
 
 ```bash
 # Connect to MySQL as root
 mysql -u root -p
 
-# Execute database scripts
-source database/create_database.sql
-source database/schema.sql
-source database/sample_data.sql
+# Run the setup script
+source database/setup_database.sql
 ```
+
+**Default Database Credentials:**
+- Database: `homework_db`
+- Username: `root`
+- Password: `Ashmhmd25321`
 
 ### 2. Backend Setup
 
 ```bash
 cd backend
 
-# Build and run the Spring Boot application
-./mvnw spring-boot:run
+# Update database configuration if needed
+# Edit src/main/resources/application.yml
 
-# Or on Windows
-mvnw.cmd spring-boot:run
+# Compile and run
+mvn clean compile
+mvn spring-boot:run
 ```
 
-The backend will start on `http://localhost:8080`
+The backend will start on `http://localhost:8080/api`
 
 ### 3. Frontend Setup
 
@@ -91,86 +83,168 @@ npm install
 npm run dev
 ```
 
-The frontend will start on `http://localhost:3000`
+The frontend will start on `http://localhost:5173`
 
-## 👥 User Roles & Features
+## Default Users
 
-### 🔐 Authentication System
-- **Admin**: System administration and user management
-- **Teacher**: Create assignments, grade submissions, manage classes
-- **Student**: View and submit homework, track progress
-- **Parent**: Monitor child's homework and progress
+The application comes with pre-configured demo users:
 
-### 📝 Core Features (Planned Implementation)
+| Role | Email | Password | Description |
+|------|-------|----------|-------------|
+| Admin | admin@homework.com | admin123 | System administrator |
+| Teacher | teacher@homework.com | teacher123 | Mathematics teacher |
+| Student | student@homework.com | student123 | 3rd Grade student |
+| Parent | parent@homework.com | parent123 | Parent of Emma Johnson |
 
-1. **User Authentication** - Role-based access control
-2. **Homework Management** - Upload, assign, and track homework
-3. **Submission System** - Student homework submissions
-4. **Progress Tracking** - Analytics and reporting
-5. **Announcements** - School-wide and class-specific notifications
-6. **Support System** - Feedback and help requests
-7. **Mobile Responsive** - Works on all devices
+## API Endpoints
 
-## 🎯 Implementation Plan
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user info
 
-### ✅ Step 1: Project Setup (COMPLETED)
-- Backend Spring Boot configuration
-- Frontend React + Vite setup
-- Database schema and sample data
-- Development environment ready
+### Homework Management
+- `GET /api/homework` - List all homework
+- `POST /api/homework` - Create new homework
+- `PUT /api/homework/{id}` - Update homework
+- `DELETE /api/homework/{id}` - Delete homework
 
-### 🔄 Next Steps
-2. User authentication system
-3. Homework upload functionality  
-4. Student homework view
-5. Submission tracking
-6. Announcements module
-7. Support system
-8. Analytics dashboard
-9. Mobile responsiveness
-10. Final polish and deployment
+### Submissions
+- `GET /api/submissions` - List submissions
+- `POST /api/submissions` - Submit homework
+- `PUT /api/submissions/{id}/grade` - Grade submission
 
-## 🗄️ Database Schema
+### Classes
+- `GET /api/classes` - List classes
+- `POST /api/classes` - Create class
+- `GET /api/classes/{id}/enrollments` - Get class enrollments
 
-### Key Tables
-- `users` - All user types (Admin, Teacher, Student, Parent)
-- `classes` - Grade levels and class management
-- `subjects` - Subject categorization
-- `homework` - Assignment details
-- `homework_submissions` - Student submissions
-- `announcements` - School communications
-- `support_requests` - Help and feedback
+## Project Structure
 
-## 🔧 Development
+```
+├── backend/                 # Spring Boot backend
+│   ├── src/main/java/
+│   │   ├── config/         # Configuration classes
+│   │   ├── controller/     # REST controllers
+│   │   ├── dto/           # Data transfer objects
+│   │   ├── entity/        # JPA entities
+│   │   ├── repository/    # Data repositories
+│   │   ├── security/      # Security configuration
+│   │   └── service/       # Business logic
+│   └── src/main/resources/
+│       └── application.yml # Application configuration
+├── frontend/               # React frontend
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── context/       # React context providers
+│   │   └── main.jsx       # Application entry point
+│   └── package.json       # Frontend dependencies
+├── database/               # Database scripts
+│   ├── setup_database.sql # Complete database setup
+│   └── migrations/        # Database migration files
+└── README.md              # This file
+```
 
-### Backend API Endpoints (Coming Soon)
-- `/api/auth/*` - Authentication endpoints
-- `/api/homework/*` - Homework management
-- `/api/users/*` - User management
-- `/api/classes/*` - Class management
+## Security Features
 
-### Frontend Components (Coming Soon)
-- Authentication forms
-- Dashboard layouts
-- Homework management interfaces
-- Responsive navigation
-- Interactive animations
+- **JWT Authentication**: Secure token-based authentication
+- **Role-based Access Control**: Different permissions for different user roles
+- **Password Encryption**: BCrypt password hashing
+- **CORS Configuration**: Proper cross-origin resource sharing setup
+- **Input Validation**: Server-side validation for all inputs
 
-## 🤝 Contributing
+## File Upload Support
 
-This is an educational project following modern web development practices:
+The application supports various file types:
+- **Images**: PNG, JPG, JPEG, WebP
+- **Documents**: PDF, DOC, DOCX
+- **Audio**: MP3, WAV, M4A
+- **Maximum file size**: 10MB
 
-1. **Clean Architecture**: Separation of concerns
-2. **Responsive Design**: Mobile-first approach  
-3. **Modern UI/UX**: Intuitive and accessible interface
-4. **Security Best Practices**: JWT authentication, input validation
-5. **Performance**: Optimized loading and smooth animations
+## Development
 
-## 📄 License
+### Backend Development
 
-This project is for educational purposes. Feel free to use and modify as needed.
+```bash
+cd backend
 
----
+# Run with hot reload
+mvn spring-boot:run
 
-**Ready for the next step?** 🚀 
-Run the development servers and proceed with implementing user authentication! 
+# Run tests
+mvn test
+
+# Package application
+mvn package
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linting
+npm run lint
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Failed**
+   - Ensure MySQL is running
+   - Check database credentials in `application.yml`
+   - Verify database exists: `homework_db`
+
+2. **JWT Token Issues**
+   - Check JWT secret in `application.yml`
+   - Ensure JWT dependencies are properly added to `pom.xml`
+
+3. **Frontend Build Errors**
+   - Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
+   - Check Node.js version compatibility
+
+4. **CORS Issues**
+   - Verify CORS configuration in `WebSecurityConfig.java`
+   - Check frontend URL in backend CORS settings
+
+### Logs
+
+- **Backend logs**: Check console output or application logs
+- **Frontend logs**: Check browser console for JavaScript errors
+- **Database logs**: Check MySQL error logs
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation and troubleshooting sections
+
+## Future Enhancements
+
+- **Real-time Communication**: WebSocket support for live updates
+- **Mobile App**: React Native mobile application
+- **Advanced Analytics**: Learning analytics and progress reports
+- **Integration**: LMS integration and third-party tools
+- **Multi-language Support**: Internationalization (i18n)
+- **Offline Support**: Progressive Web App (PWA) features 

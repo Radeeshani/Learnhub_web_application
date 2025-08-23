@@ -55,7 +55,7 @@ const Dashboard = () => {
     ],
     STUDENT: [
       { title: 'My Homework', icon: BookOpenIcon, description: 'View assigned homework', color: 'bg-blue-500' },
-      { title: 'Submit Work', icon: ClipboardDocumentListIcon, description: 'Submit completed assignments', color: 'bg-green-500' },
+              { title: 'Submit Work', icon: ClipboardDocumentListIcon, description: 'Submit completed homeworks', color: 'bg-green-500' },
       { title: 'Announcements', icon: BellIcon, description: 'View announcements', color: 'bg-yellow-500' },
       { title: 'My Progress', icon: ChartBarIcon, description: 'Track your progress', color: 'bg-indigo-500' }
     ],

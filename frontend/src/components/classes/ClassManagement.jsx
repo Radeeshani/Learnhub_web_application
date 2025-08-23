@@ -58,7 +58,7 @@ const ClassManagement = () => {
       setLoading(true);
       
       // Always fetch all classes first for better user experience
-      let url = 'http://localhost:8080/api/homework/classes';
+              let url = '/api/homework/classes';
       
       const response = await fetch(url, {
         headers: {
@@ -123,7 +123,7 @@ const ClassManagement = () => {
 
       console.log('Sending request data:', requestData);
 
-      const response = await fetch('http://localhost:8080/api/homework/classes', {
+              const response = await fetch('/api/homework/classes', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -157,7 +157,7 @@ const ClassManagement = () => {
   const handleUpdateClass = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:8080/api/homework/classes/${selectedClass.id}`, {
+              const response = await fetch(`/api/homework/classes/${selectedClass.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -192,7 +192,7 @@ const ClassManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/homework/classes/${classId}`, {
+              const response = await fetch(`/api/homework/classes/${classId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -246,7 +246,7 @@ const ClassManagement = () => {
 
   const openViewModal = async (cls) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/homework/classes/${cls.id}/statistics`, {
+              const response = await fetch(`/api/homework/classes/${cls.id}/statistics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -287,7 +287,7 @@ const ClassManagement = () => {
                 🎓 Class Management
               </h1>
               <p className="mt-2 text-lg text-gray-600">
-                Manage your classes, students, and assignments
+                Manage your classes, students, and homeworks
               </p>
             </div>
             

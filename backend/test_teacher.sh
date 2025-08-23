@@ -1,0 +1,1 @@
+curl -s "http://localhost:8080/api/homework/teacher" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiVEVBQ0hFUiIsInVzZXJJZCI6NiwiZW1haWw6dGVzdHRlYWNoZXJAdGVzdC5jb20iLCJzdWIiOiJ0ZXN0dGVhY2hlckB0ZXN0LmNvbSIsImlhdCI6MTc1NTc5MjYwOSwiZXhwIjoxNzU1ODc5MDA5fS5nWVNWZF9KU2VqaEpWYVRndlZEekxXMG9zVm5NWTgydWlDOEM3cUppN2Fv"

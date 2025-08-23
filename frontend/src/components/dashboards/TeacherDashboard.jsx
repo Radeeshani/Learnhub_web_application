@@ -122,7 +122,7 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const fetchHomeworks = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/homework/teacher', {
+        const response = await axios.get('/api/homework/teacher', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setHomeworks(response.data);
@@ -188,7 +188,7 @@ const TeacherDashboard = () => {
     try {
       // Fetch submissions for all homeworks
       const submissionsPromises = homeworksData.map(homework => {
-        return axios.get(`http://localhost:8080/api/homework/submissions/homework/${homework.id}`);
+        return axios.get(`/api/homework/submissions/homework/${homework.id}`);
       });
       
       const submissionsResponses = await Promise.all(submissionsPromises);
@@ -212,7 +212,7 @@ const TeacherDashboard = () => {
     // Extract the filename from the fileUrl (e.g., "/uploads/homework/filename.pdf" -> "filename.pdf")
     const fileName = fileUrl.split('/').pop();
     // Construct the correct URL for the backend file endpoint with /api context path
-    const fullUrl = `http://localhost:8080/api/uploads/homework/${fileName}`;
+    const fullUrl = `/api/uploads/homework/${fileName}`;
     // Open in a new tab
     window.open(fullUrl, '_blank');
   };
@@ -227,7 +227,7 @@ const TeacherDashboard = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:8080/api/homework/${homework.id}`, {
+              await axios.delete(`/api/homework/${homework.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -249,7 +249,7 @@ const TeacherDashboard = () => {
   const submitGrade = async () => {
     try {
                       await axios.post(
-                  `http://localhost:8080/api/homework/submissions/${selectedSubmission.id}/grade`,
+                  `/api/homework/submissions/${selectedSubmission.id}/grade`,
                   {
                     grade: parseInt(grade),
                     feedback: feedback
@@ -344,7 +344,7 @@ const TeacherDashboard = () => {
                 className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl text-base font-medium text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 shadow-lg transform hover:scale-105 transition-all duration-200"
               >
                 <DocumentPlusIcon className="h-5 w-5 mr-2" />
-                Create Assignment
+                Create Homework
               </Link>
             </div>
           </div>
@@ -357,7 +357,7 @@ const TeacherDashboard = () => {
           animate="visible"
           className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {/* Total Assignments */}
+                          {/* Total Homeworks */}
           <motion.div
             variants={itemVariants}
             className="bg-white rounded-2xl shadow-lg p-6 transform hover:scale-105 transition-all duration-200"
@@ -367,7 +367,7 @@ const TeacherDashboard = () => {
                 <DocumentTextIcon className="h-8 w-8 text-sky-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Assignments</p>
+                <p className="text-sm font-medium text-gray-500">Total Homeworks</p>
                 <p className="text-2xl font-semibold text-sky-600">{homeworks.length}</p>
               </div>
             </div>
@@ -502,7 +502,7 @@ const TeacherDashboard = () => {
           </motion.div>
         </div>
 
-        {/* Recent Assignments */}
+                        {/* Recent Homeworks */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -513,7 +513,7 @@ const TeacherDashboard = () => {
             <div className="px-6 py-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                 <DocumentTextIcon className="h-6 w-6 mr-2 text-sky-600" />
-                Recent Assignments
+                Recent Homeworks
               </h2>
 
               {loading ? (
@@ -525,15 +525,15 @@ const TeacherDashboard = () => {
               ) : homeworks.length === 0 ? (
                 <div className="text-center py-8">
                   <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No assignments</h3>
-                  <p className="mt-1 text-sm text-gray-500">Get started by creating a new assignment.</p>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No homeworks</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by creating a new homework.</p>
                   <div className="mt-6">
                     <Link
                       to="/create-homework"
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
                     >
                       <DocumentPlusIcon className="h-5 w-5 mr-2" />
-                      New Assignment
+                                              New Homework
                     </Link>
                   </div>
                 </div>

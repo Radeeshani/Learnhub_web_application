@@ -32,7 +32,7 @@ const StudentClassView = () => {
       setLoading(true);
       
       // Fetch enrolled classes
-      const enrolledResponse = await fetch(`http://localhost:8080/api/homework/classes/student/${user.id}`, {
+              const enrolledResponse = await fetch(`/api/homework/classes/student/${user.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -45,7 +45,7 @@ const StudentClassView = () => {
       }
       
       // Fetch all available classes
-      const allClassesResponse = await fetch('http://localhost:8080/api/homework/classes', {
+              const allClassesResponse = await fetch('/api/homework/classes', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ const StudentClassView = () => {
 
   const openViewModal = async (cls) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/homework/classes/${cls.id}`, {
+              const response = await fetch(`/api/homework/classes/${cls.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

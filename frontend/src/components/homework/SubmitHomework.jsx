@@ -56,7 +56,7 @@ const SubmitHomework = () => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">No Homework Selected</h1>
-            <p className="text-gray-600 mb-6">Please select a homework assignment to submit.</p>
+            <p className="text-gray-600 mb-6">Please select a homework to submit.</p>
             <button
               onClick={() => navigate('/dashboard')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -175,18 +175,21 @@ const SubmitHomework = () => {
       
       const formData = new FormData();
       
-      const submissionData = {
-        homeworkId: homework.id,
-        submissionText: submissionText,
-        submissionType: submissionType,
-        audioData: voiceRecording ? await convertBlobToBase64(voiceRecording.blob) : null,
-        imageData: photoFile ? await convertFileToBase64(photoFile) : null,
-        pdfData: pdfFile ? await convertFileToBase64(pdfFile) : null
-      };
+      formData.append('homeworkId', homework.id.toString());
+      formData.append('submissionText', submissionText);
+      formData.append('submissionType', submissionType);
       
-      formData.append('submission', new Blob([JSON.stringify(submissionData)], {
-        type: 'application/json'
-      }));
+      if (voiceRecording) {
+        formData.append('audioData', await convertBlobToBase64(voiceRecording.blob));
+      }
+      
+      if (photoFile) {
+        formData.append('imageData', await convertFileToBase64(photoFile));
+      }
+      
+      if (pdfFile) {
+        formData.append('pdfData', await convertFileToBase64(pdfFile));
+      }
       
       if (voiceRecording) {
         formData.append('voiceFile', voiceRecording.blob, 'voice_recording.wav');
@@ -204,7 +207,7 @@ const SubmitHomework = () => {
       if (isEditing) {
         // Update existing submission
         response = await axios.put(
-          `http://localhost:8080/api/homework/submissions/${editingSubmission.id}`,
+          `/api/homework/submissions/${editingSubmission.id}`,
           formData,
           {
             headers: {
@@ -216,7 +219,7 @@ const SubmitHomework = () => {
       } else {
         // Create new submission
         response = await axios.post(
-          'http://localhost:8080/api/homework/submit',
+          '/api/homework/submit',
           formData,
           {
             headers: {
@@ -257,7 +260,7 @@ const SubmitHomework = () => {
               {isEditing ? 'Edit Homework Submission' : 'Submit Homework'}
             </h1>
             <p className="text-gray-600">
-              {isEditing ? 'Update your homework submission' : 'Complete your homework assignment'}
+              {isEditing ? 'Update your homework submission' : 'Complete your homework'}
             </p>
           </div>
 

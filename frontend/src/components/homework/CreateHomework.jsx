@@ -70,19 +70,21 @@ const CreateHomework = () => {
 
     try {
       const formPayload = new FormData();
-      formPayload.append('file', file);
+      if (file) {
+        formPayload.append('file', file);
+      }
       
       // Convert date string to ISO format
-      const homeworkData = {
-        ...formData,
-        dueDate: new Date(formData.dueDate).toISOString()
-      };
+      const dueDate = new Date(formData.dueDate).toISOString();
       
-      formPayload.append('homework', new Blob([JSON.stringify(homeworkData)], {
-        type: 'application/json'
-      }));
+      // Append individual fields
+      formPayload.append('title', formData.title);
+      formPayload.append('description', formData.description);
+      formPayload.append('subject', formData.subject);
+      formPayload.append('classGrade', formData.classGrade);
+      formPayload.append('dueDate', dueDate);
 
-      await axios.post('http://localhost:8080/api/homework', formPayload, {
+             await axios.post('/api/homework', formPayload, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -92,7 +94,7 @@ const CreateHomework = () => {
       setSuccess(true);
       // Wait for 1.5 seconds to show success message before navigating
       setTimeout(() => {
-        navigate('/teacher', { state: { message: 'Assignment created successfully!' } });
+        navigate('/teacher', { state: { message: 'Homework created successfully!' } });
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create homework');
@@ -138,7 +140,7 @@ const CreateHomework = () => {
                 className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-center"
               >
                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                Assignment created successfully! Redirecting...
+                Homework created successfully! Redirecting...
               </motion.div>
             )}
 
@@ -220,9 +222,9 @@ const CreateHomework = () => {
                       className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
                     >
                       <option value="">Select Grade</option>
-                      {[...Array(10)].map((_, index) => (
-                        <option key={index + 1} value={index + 1}>
-                          Grade {index + 1}
+                      {['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade'].map((grade, index) => (
+                        <option key={index + 1} value={grade}>
+                          {grade}
                         </option>
                       ))}
                     </select>

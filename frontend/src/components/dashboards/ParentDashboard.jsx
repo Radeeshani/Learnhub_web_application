@@ -45,8 +45,8 @@ const ParentDashboard = () => {
 
   const fetchStudentInfo = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8080/api/users/${user.parentOfStudentId}`,
+             const response = await axios.get(
+         `/api/users/${user.parentOfStudentId}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -60,8 +60,8 @@ const ParentDashboard = () => {
   const fetchHomeworks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `http://localhost:8080/api/homework/parent?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+             const response = await axios.get(
+         `/api/homework/parent?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -151,7 +151,7 @@ const ParentDashboard = () => {
                 Welcome, {user?.firstName}!
               </h1>
               <p className="mt-2 text-sky-100 text-lg">
-                Monitor your child's academic progress and upcoming assignments.
+                Monitor your child's academic progress and upcoming homeworks.
               </p>
               {studentInfo && (
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -288,7 +288,7 @@ const ParentDashboard = () => {
                       </div>
                       {homework.fileUrl && (
                         <a
-                          href={`http://localhost:8080/api/uploads/homework/${homework.fileUrl.split('/').pop()}`}
+                                                     href={`/api/uploads/homework/${homework.fileUrl.split('/').pop()}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ml-4 flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"

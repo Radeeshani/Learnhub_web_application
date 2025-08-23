@@ -29,13 +29,13 @@ spring:
       max-request-size: 10MB
       location: ${java.io.tmpdir}
   
-  security:
-    user:
-      name: admin
-      password: admin123
+  # security:
+  #   user:
+  #     name: admin
+  #     password: admin123
 
 jwt:
-  secret: your-256-bit-secret
+  secret: your-256-bit-secret-key-must-be-32-chars-long
   expiration: 86400000  # 24 hours in milliseconds
 
 logging:

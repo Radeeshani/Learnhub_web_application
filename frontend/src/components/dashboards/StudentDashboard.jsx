@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -22,6 +22,7 @@ import Header from '../common/Header';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [homeworks, setHomeworks] = useState([]);
   const [submissions, setSubmissions] = useState({});
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,7 @@ const StudentDashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [message, setMessage] = useState('');
   const { user, token } = useAuth();
 
   const subjects = [
@@ -44,47 +46,42 @@ const StudentDashboard = () => {
     'Physical Education'
   ];
 
-  useEffect(() => {
-    fetchHomeworks();
-    fetchSubmissions();
-  }, [token, sortBy, sortOrder, selectedSubject]);
 
-  const fetchHomeworks = async () => {
+
+  const fetchHomeworks = useCallback(async () => {
     try {
       setLoading(true);
-      const gradeNumber = user?.classGrade ? parseInt(user.classGrade.toString().replace('Grade ', '')) : null;
+      console.log('Fetching homeworks with token:', token ? 'Token exists' : 'No token');
+      console.log('API URL:', `/api/homework/student?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
       
-      if (!gradeNumber) {
-        setError('Invalid grade');
-        setLoading(false);
-        return;
-      }
-
       const response = await axios.get(
-        `http://localhost:8080/api/homework/grade/${gradeNumber}?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `/api/homework/student?subject=${selectedSubject}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
       );
+      console.log('Homeworks response:', response.data);
       setHomeworks(response.data);
       setError('');
     } catch (err) {
-      setError('Failed to fetch homeworks');
       console.error('Error fetching homeworks:', err);
+      setError('Failed to fetch homeworks');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, selectedSubject, sortBy, sortOrder]);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
-                      const response = await axios.get(
-                  'http://localhost:8080/api/homework/submissions/student',
-                  {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                  }
-                );
+      console.log('Fetching submissions with token:', token ? 'Token exists' : 'No token');
+      const response = await axios.get(
+        '/api/homework/submissions/student',
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
       
+      console.log('Submissions response:', response.data);
       const submissionsMap = {};
       response.data.forEach(submission => {
         submissionsMap[submission.homeworkId] = submission;
@@ -93,7 +90,7 @@ const StudentDashboard = () => {
     } catch (err) {
       console.error('Error fetching submissions:', err);
     }
-  };
+  }, [token]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -169,13 +166,62 @@ const StudentDashboard = () => {
 
   const handleViewAttachment = (fileUrl) => {
     const fileName = fileUrl.split('/').pop();
-    const fullUrl = `http://localhost:8080/api/uploads/homework/${fileName}`;
+            const fullUrl = `/api/uploads/homework/${fileName}`;
     window.open(fullUrl, '_blank');
   };
+
+  // Main useEffect to fetch data on component mount and when dependencies change
+  useEffect(() => {
+    console.log('StudentDashboard useEffect triggered with:', { token: token ? 'Token exists' : 'No token', user, sortBy, sortOrder, selectedSubject });
+    fetchHomeworks();
+    fetchSubmissions();
+  }, [token, sortBy, sortOrder, selectedSubject, fetchHomeworks, fetchSubmissions]);
+
+  // Refresh submissions when location changes (e.g., returning from submission)
+  useEffect(() => {
+    fetchSubmissions();
+    
+    // Check for navigation state messages
+    if (location.state?.message) {
+      setMessage(location.state.message);
+      // Clear the message after 5 seconds
+      setTimeout(() => setMessage(''), 5000);
+      // Clear the navigation state to prevent showing the message again
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.pathname, location.state, navigate, fetchSubmissions]);
+
+  // Refresh submissions when component receives focus (e.g., returning from submission)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchSubmissions();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchSubmissions]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100">
       <Header />
+      
+      {/* Success Message */}
+      {message && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4"
+          >
+            <div className="flex items-center">
+              <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+              <p className="text-green-800 font-medium">{message}</p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <motion.div
@@ -196,7 +242,7 @@ const StudentDashboard = () => {
                 Welcome back, {user?.firstName}!
               </h1>
               <p className="mt-2 text-sky-100 text-lg">
-                Stay on top of your assignments and track your progress.
+                Stay on top of your homeworks and track your progress.
               </p>
               <div className="mt-4 flex items-center space-x-4">
                 <div className="bg-sky-100/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white">
@@ -229,6 +275,18 @@ const StudentDashboard = () => {
                   </option>
                 ))}
               </select>
+              <button
+                onClick={() => {
+                  fetchHomeworks();
+                  fetchSubmissions();
+                }}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              >
+                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -473,139 +531,125 @@ const StudentDashboard = () => {
                 </div>
               )}
               
-              {selectedSubmission.attachmentUrl && (
+              {/* Attachments Section */}
+              {(selectedSubmission.audioData || selectedSubmission.imageData || selectedSubmission.pdfData || selectedSubmission.attachmentUrl) && (
                 <div>
-                  <span className="font-medium text-gray-700">Attachment:</span>
-                  <div className="mt-2 p-3 bg-gray-50 rounded border">
-                    {selectedSubmission.submissionType === 'VOICE' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          Voice Recording: {selectedSubmission.attachmentName || 'voice_recording.wav'}
-                        </p>
-                        {selectedSubmission.audioData ? (
-                          <>
-                            <audio 
-                              controls 
-                              className="w-full"
-                              preload="metadata"
-                            >
-                              <source src={`data:audio/wav;base64,${selectedSubmission.audioData}`} type="audio/wav" />
-                              Your browser does not support the audio element.
-                            </audio>
-                            <p className="text-xs text-gray-500 mt-1">
-                              🎤 You can play back your voice recording to review what you submitted.
-                            </p>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              🎤 <strong>Voice Recording Submitted:</strong> This submission was created before audio playback was implemented. 
-                              You submitted a voice recording, but the audio data is not available for playback.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New voice submissions will include audio playback functionality.
-                            </p>
-                          </div>
-                        )}
+                  <span className="font-medium text-gray-700">Attachments:</span>
+                  <div className="mt-2 space-y-4">
+                    
+                    {/* Voice Recording */}
+                    {selectedSubmission.audioData && (
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            🎤 Voice Recording: {selectedSubmission.attachmentName || 'voice_recording.wav'}
+                          </p>
+                          <audio 
+                            controls 
+                            className="w-full"
+                            preload="metadata"
+                          >
+                            <source src={`data:audio/wav;base64,${selectedSubmission.audioData}`} type="audio/wav" />
+                            Your browser does not support the audio element.
+                          </audio>
+                          <p className="text-xs text-gray-500 mt-1">
+                            You can play back your voice recording to review what you submitted.
+                          </p>
+                        </div>
                       </div>
-                    ) : selectedSubmission.submissionType === 'PHOTO' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          Photo: {selectedSubmission.attachmentName || 'submission_photo.jpg'}
-                        </p>
-                        {selectedSubmission.imageData ? (
-                          <>
-                            <img 
-                              src={`data:image/jpeg;base64,${selectedSubmission.imageData}`}
-                              alt="Submitted photo"
-                              className="w-full max-w-md rounded-lg border"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              📸 Your submitted photo is displayed above.
-                            </p>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              📸 <strong>Photo Submitted:</strong> This submission was created before image storage was implemented. 
-                              You submitted a photo, but the image data is not available for display.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New photo submissions will include image display functionality.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : selectedSubmission.submissionType === 'PDF' ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">
-                          PDF: {selectedSubmission.attachmentName || 'submission.pdf'}
-                        </p>
-                        {selectedSubmission.pdfData ? (
-                          <>
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                              <p className="text-sm text-gray-700 mb-2">
-                                📄 Your submitted PDF document
-                              </p>
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    // Convert base64 to blob
-                                    const byteCharacters = atob(selectedSubmission.pdfData);
-                                    const byteNumbers = new Array(byteCharacters.length);
-                                    for (let i = 0; i < byteCharacters.length; i++) {
-                                      byteNumbers[i] = byteCharacters.charCodeAt(i);
-                                    }
-                                    const byteArray = new Uint8Array(byteNumbers);
-                                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                                    
-                                    // Create blob URL
-                                    const url = window.URL.createObjectURL(blob);
-                                    
-                                    // Open PDF in new tab
-                                    window.open(url, '_blank');
-                                    
-                                    // Clean up blob URL after a delay
-                                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                  } catch (error) {
-                                    console.error('Error opening PDF:', error);
-                                    alert('Error opening PDF. Please try again.');
-                                  }
-                                }}
-                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                              >
-                                📄 View PDF Document
-                              </button>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Click the button above to open your PDF in a new tab.
-                              </p>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800">
-                              📄 <strong>PDF Submitted:</strong> This submission was created before PDF storage was implemented. 
-                              You submitted a PDF, but the document data is not available for viewing.
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              <strong>Note:</strong> New PDF submissions will include document viewing functionality.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <a 
-                        href={selectedSubmission.attachmentUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sky-600 hover:text-sky-700 font-medium"
-                      >
-                        {selectedSubmission.attachmentName || 'View Attachment'}
-                      </a>
                     )}
+                    
+                    {/* Photo/Image */}
+                    {selectedSubmission.imageData && (
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            📸 Photo: {selectedSubmission.attachmentName || 'submission_photo.jpg'}
+                          </p>
+                          <img 
+                            src={`data:image/jpeg;base64,${selectedSubmission.imageData}`}
+                            alt="Submitted photo"
+                            className="w-full max-w-md rounded-lg border"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Your submitted photo is displayed above.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* PDF Document */}
+                    {selectedSubmission.pdfData && (
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 mb-2">
+                            📄 PDF: {selectedSubmission.attachmentName || 'submission.pdf'}
+                          </p>
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <p className="text-sm text-gray-700 mb-2">
+                              Your submitted PDF document
+                            </p>
+                            <button 
+                              onClick={() => {
+                                try {
+                                  // Convert base64 to blob
+                                  const byteCharacters = atob(selectedSubmission.pdfData);
+                                  const byteNumbers = new Array(byteCharacters.length);
+                                  for (let i = 0; i < byteCharacters.length; i++) {
+                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                  }
+                                  const byteArray = new Uint8Array(byteNumbers);
+                                  const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                  
+                                  // Create blob URL
+                                  const url = window.URL.createObjectURL(blob);
+                                  
+                                  // Open PDF in new tab
+                                  window.open(url, '_blank');
+                                  
+                                  // Clean up blob URL after a delay
+                                  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                } catch (error) {
+                                  console.error('Error opening PDF:', error);
+                                  alert('Error opening PDF. Please try again.');
+                                }
+                              }}
+                              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              📄 View PDF Document
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Click the button above to open your PDF in a new tab.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Generic Attachment URL */}
+                    {selectedSubmission.attachmentUrl && !selectedSubmission.audioData && !selectedSubmission.imageData && !selectedSubmission.pdfData && (
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <p className="text-sm text-gray-600 mb-2">
+                          📎 Attachment: {selectedSubmission.attachmentName || 'submission_attachment'}
+                        </p>
+                        <a 
+                          href={selectedSubmission.attachmentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-2 bg-sky-600 text-white text-sm rounded-lg hover:bg-sky-700 transition-colors"
+                        >
+                          📎 View Attachment
+                        </a>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Click the button above to open your attachment in a new tab.
+                        </p>
+                      </div>
+                    )}
+                    
                   </div>
                 </div>
               )}
+
               
               {selectedSubmission.status === 'GRADED' && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">

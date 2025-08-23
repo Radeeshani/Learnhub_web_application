@@ -35,7 +35,7 @@ const AdminDashboard = () => {
     totalUsers: 256,
     activeUsers: 180,
     totalClasses: 15,
-    totalAssignments: 45,
+            totalHomeworks: 45,
     averageGrade: 85,
     systemUptime: '99.9%'
   });
@@ -205,8 +205,8 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4">
-                  <div className="text-sm text-gray-500">Total Assignments</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-2">{systemStats.totalAssignments}</div>
+                                  <div className="text-sm text-gray-500">Total Homeworks</div>
+                <div className="text-2xl font-bold text-gray-900 mt-2">{systemStats.totalHomeworks}</div>
                   <div className="text-sm text-purple-600 mt-1">Across all classes</div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4">

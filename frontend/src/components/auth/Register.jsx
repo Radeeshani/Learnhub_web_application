@@ -10,13 +10,13 @@ const Register = () => {
       value: 'STUDENT', 
       label: 'Student', 
       icon: '👨‍🎓',
-      description: 'Access your assignments, grades, and class schedule'
+              description: 'Access your homeworks, grades, and class schedule'
     },
     { 
       value: 'TEACHER', 
       label: 'Teacher', 
       icon: '👨‍🏫',
-      description: 'Manage classes, assignments, and student progress'
+              description: 'Manage classes, homeworks, and student progress'
     }
   ];
 

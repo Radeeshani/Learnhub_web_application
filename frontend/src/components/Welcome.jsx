@@ -44,7 +44,7 @@ const Welcome = () => {
               Interactive Learning
             </h3>
             <p className="text-gray-600">
-              Engaging homework assignments with modern UI
+                              Engaging homework with modern UI
             </p>
           </div>
 
