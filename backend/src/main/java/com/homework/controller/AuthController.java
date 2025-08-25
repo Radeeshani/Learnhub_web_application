@@ -47,6 +47,8 @@ public class AuthController {
             response.setParentOfStudentId(user.getParentOfStudentId() != null ? 
                     user.getParentOfStudentId().toString() : null);
             response.setSubjectTaught(user.getSubjectTaught());
+            response.setPhoneNumber(user.getPhoneNumber());
+            response.setProfilePicture(user.getProfilePicture());
             response.setToken(jwtTokenProvider.generateToken(user.getEmail(), user.getRole().toString(), user.getId()));
 
             logger.debug("Login successful for email: {}", request.getEmail());
@@ -72,6 +74,8 @@ public class AuthController {
             user.setRole(UserRole.valueOf(request.getRole()));
             user.setClassGrade(request.getClassGrade());
             user.setSubjectTaught(request.getSubjectTaught());
+            user.setPhoneNumber(request.getPhoneNumber());
+            user.setProfilePicture(request.getProfilePicture());
 
             // If registering as a parent, convert studentId to Long
             if (UserRole.valueOf(request.getRole()) == UserRole.PARENT && request.getParentOfStudentId() != null) {
@@ -90,6 +94,8 @@ public class AuthController {
             response.setParentOfStudentId(savedUser.getParentOfStudentId() != null ? 
                     savedUser.getParentOfStudentId().toString() : null);
             response.setSubjectTaught(savedUser.getSubjectTaught());
+            response.setPhoneNumber(savedUser.getPhoneNumber());
+            response.setProfilePicture(savedUser.getProfilePicture());
             response.setToken(jwtTokenProvider.generateToken(savedUser.getEmail(), savedUser.getRole().toString(), savedUser.getId()));
 
             logger.debug("Registration successful for email: {}", request.getEmail());
@@ -148,6 +154,8 @@ public class AuthController {
             userInfo.setParentOfStudentId(user.getParentOfStudentId() != null ? 
                     user.getParentOfStudentId().toString() : null);
             userInfo.setSubjectTaught(user.getSubjectTaught());
+            userInfo.setPhoneNumber(user.getPhoneNumber());
+            userInfo.setProfilePicture(user.getProfilePicture());
 
             return ResponseEntity.ok(userInfo);
 

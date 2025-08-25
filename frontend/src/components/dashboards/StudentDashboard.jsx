@@ -19,6 +19,7 @@ import {
   XCircleIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
+import GamificationWidget from '../gamification/GamificationWidget';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -311,6 +312,14 @@ const StudentDashboard = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Gamification Widget */}
+        <div className="mb-8">
+          <GamificationWidget 
+            compact={true} 
+            onViewDetails={() => navigate('/gamification')}
+          />
         </div>
 
         {/* Homework List */}

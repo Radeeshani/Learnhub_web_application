@@ -1,4 +1,4 @@
-# Homework Application for Primary Education
+# EduBuddy - Your Learning Companion
 
 A comprehensive web application designed for primary education institutions to manage homework assignments, student submissions, and educational activities.
 

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Homework Application Startup Script
+# EduBuddy Startup Script
 # This script starts both the backend and frontend services
 
-echo "🚀 Starting Homework Application..."
+echo "🚀 Starting EduBuddy..."
 
 # Function to check if a port is in use
 check_port() {
@@ -78,7 +78,7 @@ else
 fi
 
 echo ""
-echo "🎉 Homework Application is now running!"
+echo "🎉 EduBuddy is now running!"
 echo ""
 echo "📍 Backend: http://localhost:8080/api"
 echo "📍 Frontend: http://localhost:5173"
@@ -98,7 +98,7 @@ echo "🛑 To stop the application, press Ctrl+C"
 # Function to cleanup on exit
 cleanup() {
     echo ""
-    echo "🛑 Stopping Homework Application..."
+    echo "🛑 Stopping EduBuddy..."
     kill $BACKEND_PID 2>/dev/null
     kill $FRONTEND_PID 2>/dev/null
     echo "✅ Application stopped."

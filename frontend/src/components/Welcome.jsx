@@ -21,10 +21,10 @@ const Welcome = () => {
           className="mb-12"
         >
           <h1 className="text-5xl md:text-6xl font-bold text-accent mb-6">
-            Homework Application
+            EduBuddy
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            for Primary Education
+            Your Learning Companion
           </p>
           <div className="w-24 h-1 bg-primary mx-auto rounded-full"></div>
         </motion.div>

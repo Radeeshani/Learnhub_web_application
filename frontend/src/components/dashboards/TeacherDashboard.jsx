@@ -24,6 +24,7 @@ import {
   ArrowUpIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
+import GamificationWidget from '../gamification/GamificationWidget';
 
 const TeacherDashboard = () => {
   const location = useLocation();
@@ -502,7 +503,15 @@ const TeacherDashboard = () => {
           </motion.div>
         </div>
 
-                        {/* Recent Homeworks */}
+        {/* Gamification Widget */}
+        <div className="mb-8">
+          <GamificationWidget 
+            compact={true} 
+            onViewDetails={() => navigate('/gamification')}
+          />
+        </div>
+
+        {/* Recent Homeworks */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

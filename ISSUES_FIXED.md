@@ -1,4 +1,4 @@
-# Issues Fixed - Homework Application
+# Issues Fixed - EduBuddy
 
 ## Summary of Problems and Solutions
 

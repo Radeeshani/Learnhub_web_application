@@ -52,6 +52,9 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    @Column(name = "profile_picture")
+    private String profilePicture;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

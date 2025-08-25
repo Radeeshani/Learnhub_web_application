@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
-import { CalendarIcon, ChevronDownIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChevronDownIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, TrophyIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -38,6 +38,12 @@ const Header = () => {
         name: 'Calendar',
         href: '/calendar',
         icon: CalendarIcon,
+        roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
+      },
+      {
+        name: 'Gamification',
+        href: '/gamification',
+        icon: TrophyIcon,
         roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
       }
     ];
@@ -81,7 +87,7 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
             <h1 className="text-xl font-semibold text-gray-900">
-              Homework Portal
+              EduBuddy
             </h1>
           </div>
           
@@ -151,13 +157,43 @@ const Header = () => {
             <NotificationBell />
             
             {/* User Info */}
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-900">
-                {user?.firstName} {user?.lastName}
+            <div className="flex items-center space-x-3">
+              {/* Profile Picture */}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                {user?.profilePicture ? (
+                  <img
+                    src={`http://localhost:8080/api/profile-pictures/${user.profilePicture}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={`w-full h-full flex items-center justify-center text-gray-500 ${user?.profilePicture ? 'hidden' : 'flex'}`}>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
               </div>
-              <div className="text-xs text-gray-500">
-                {getUserRoleDisplay()}
+              
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-900">
+                  {user?.firstName} {user?.lastName}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {getUserRoleDisplay()}
+                </div>
               </div>
+
+              {/* Profile Link */}
+              <button
+                onClick={() => navigate('/profile')}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Profile
+              </button>
             </div>
             
             {/* Logout Button */}

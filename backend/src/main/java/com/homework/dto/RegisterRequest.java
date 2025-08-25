@@ -23,6 +23,8 @@ public class RegisterRequest {
     private String classGrade;
     private String parentOfStudentId;
     private String subjectTaught;
+    private String phoneNumber;
+    private String profilePicture;
 
     // Getters and Setters
     public String getFirstName() {
@@ -87,5 +89,21 @@ public class RegisterRequest {
 
     public void setSubjectTaught(String subjectTaught) {
         this.subjectTaught = subjectTaught;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 } 

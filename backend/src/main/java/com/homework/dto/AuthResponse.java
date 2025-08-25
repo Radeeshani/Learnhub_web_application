@@ -10,6 +10,8 @@ public class AuthResponse {
     private String parentOfStudentId;
     private String token;
     private String subjectTaught;
+    private String phoneNumber;
+    private String profilePicture;
 
     // Getters and Setters
     public Long getId() {
@@ -82,5 +84,21 @@ public class AuthResponse {
 
     public void setSubjectTaught(String subjectTaught) {
         this.subjectTaught = subjectTaught;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 } 

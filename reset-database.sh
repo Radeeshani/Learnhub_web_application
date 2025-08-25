@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔄 Resetting Homework Application Database..."
+echo "🔄 Resetting EduBuddy Database..."
 echo "============================================="
 
 # Check if MySQL is accessible

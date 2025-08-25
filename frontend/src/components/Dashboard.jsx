@@ -12,9 +12,11 @@ import {
   BellIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { FiUser } from 'react-icons/fi';
 
 const Dashboard = () => {
   const { user, logout, hasRole } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
@@ -82,7 +84,7 @@ const Dashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900 font-poppins">
-                  Homework Portal
+                  EduBuddy
                 </h1>
               </div>
             </div>
@@ -100,6 +102,13 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              <button
+                onClick={() => navigate('/profile')}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-xl text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-200 mr-2"
+              >
+                <FiUser className="h-4 w-4 mr-1" />
+                Profile
+              </button>
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-xl text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
@@ -128,7 +137,7 @@ const Dashboard = () => {
                   Welcome back, {user?.firstName}! 👋
                 </h2>
                 <p className="mt-2 text-gray-600">
-                  {hasRole('ADMIN') && 'Manage your educational platform'}
+                  {hasRole('ADMIN') && 'Manage EduBuddy platform'}
                   {hasRole('TEACHER') && 'Ready to inspire and educate your students'}
                   {hasRole('STUDENT') && 'Time to learn and grow'}
                   {hasRole('PARENT') && "Keep track of your child's educational journey"}

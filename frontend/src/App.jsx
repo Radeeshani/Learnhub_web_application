@@ -19,6 +19,8 @@ import StudentClassView from './components/classes/StudentClassView';
 import Welcome from './components/Welcome';
 import NotificationPanel from './components/common/NotificationPanel';
 import ToastContainerWrapper from './components/common/ToastContainerWrapper';
+import GamificationDashboard from './components/gamification/GamificationDashboard';
+import Profile from './components/profile/Profile';
 
 const App = () => {
   return (
@@ -118,6 +120,26 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={['STUDENT']}>
                     <StudentClassView />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Gamification Routes */}
+              <Route
+                path="/gamification"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']}>
+                    <GamificationDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Profile Route */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']}>
+                    <Profile />
                   </ProtectedRoute>
                 }
               />

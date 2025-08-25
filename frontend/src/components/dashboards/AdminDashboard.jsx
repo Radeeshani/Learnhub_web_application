@@ -84,7 +84,7 @@ const AdminDashboard = () => {
             />
           </div>
           <h1 className="text-3xl font-bold mb-2">System Overview</h1>
-          <p className="text-purple-100">Monitor and manage your educational platform</p>
+                          <p className="text-purple-100">Monitor and manage EduBuddy platform</p>
           
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">

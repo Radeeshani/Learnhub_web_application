@@ -36,6 +36,12 @@ public class UserProgress {
     @Column(nullable = false)
     private Integer totalSubmissions;
     
+    @Column(nullable = false)
+    private Integer currentLevel;
+    
+    @Column(nullable = false)
+    private Integer experiencePoints;
+    
     @Column(name = "last_submission_date")
     private LocalDateTime lastSubmissionDate;
     
@@ -62,6 +68,8 @@ public class UserProgress {
         this.onTimeSubmissions = 0;
         this.perfectScores = 0;
         this.totalSubmissions = 0;
+        this.currentLevel = 1;
+        this.experiencePoints = 0;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.earnedBadges = new java.util.HashSet<>();
@@ -145,6 +153,22 @@ public class UserProgress {
         this.totalSubmissions = totalSubmissions;
     }
     
+    public Integer getCurrentLevel() {
+        return currentLevel;
+    }
+    
+    public void setCurrentLevel(Integer currentLevel) {
+        this.currentLevel = currentLevel;
+    }
+    
+    public Integer getExperiencePoints() {
+        return experiencePoints;
+    }
+    
+    public void setExperiencePoints(Integer experiencePoints) {
+        this.experiencePoints = experiencePoints;
+    }
+    
     public LocalDateTime getLastSubmissionDate() {
         return lastSubmissionDate;
     }
@@ -209,6 +233,20 @@ public class UserProgress {
             this.longestStreak = newStreak;
         }
         this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void addExperiencePoints(Integer points) {
+        this.experiencePoints += points;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void levelUp() {
+        this.currentLevel++;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public Boolean canLevelUp(Integer requiredExperience) {
+        return this.experiencePoints >= requiredExperience;
     }
     
     @PreUpdate
