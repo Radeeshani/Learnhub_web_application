@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
-import { CalendarIcon, ChevronDownIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import ReminderPanel from './ReminderPanel';
+import { CalendarIcon, ChevronDownIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, TrophyIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showReminderPanel, setShowReminderPanel] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -153,6 +155,16 @@ const Header = () => {
               )}
             </div>
             
+            {/* Reminder Bell */}
+            <button
+              onClick={() => setShowReminderPanel(true)}
+              className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Homework Reminders"
+            >
+              <ClockIcon className="h-6 w-6" />
+              <span className="sr-only">Reminders</span>
+            </button>
+            
             {/* Notification Bell */}
             <NotificationBell />
             
@@ -206,6 +218,12 @@ const Header = () => {
           </div>
         </div>
       </div>
+      
+      {/* Reminder Panel */}
+      <ReminderPanel 
+        isOpen={showReminderPanel} 
+        onClose={() => setShowReminderPanel(false)} 
+      />
     </header>
   );
 };

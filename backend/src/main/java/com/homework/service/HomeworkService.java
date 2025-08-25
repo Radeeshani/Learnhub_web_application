@@ -32,6 +32,9 @@ public class HomeworkService {
     @Autowired
     private NotificationService notificationService;
     
+    @Autowired
+    private ReminderService reminderService;
+    
     private final Path uploadPath = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
@@ -70,6 +73,9 @@ public class HomeworkService {
         
         // Create notification for students about new homework
         notificationService.createNewHomeworkNotification(savedHomework);
+        
+        // Create reminders for all students in the grade
+        reminderService.createHomeworkReminders(savedHomework);
         
         return savedHomework;
     }
