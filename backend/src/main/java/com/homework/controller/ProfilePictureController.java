@@ -20,17 +20,19 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/profile-pictures")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class ProfilePictureController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfilePictureController.class);
-    private static final String UPLOAD_DIR = "backend/uploads/profile-pictures";
+
+
+
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
         try {
             // Create upload directory if it doesn't exist
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            Path uploadPath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/backend/uploads/profile-pictures");
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
@@ -64,7 +66,7 @@ public class ProfilePictureController {
     @GetMapping("/{fileName:.+}")
     public ResponseEntity<Resource> serveProfilePicture(@PathVariable String fileName) {
         try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName);
+            Path filePath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/backend/uploads/profile-pictures").resolve(fileName);
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {

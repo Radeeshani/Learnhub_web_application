@@ -12,34 +12,34 @@ public class UserProgress {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
     
-    @Column(nullable = false)
+    @Column(name = "total_points", nullable = false)
     private Integer totalPoints;
     
-    @Column(nullable = false)
+    @Column(name = "current_streak", nullable = false)
     private Integer currentStreak;
     
-    @Column(nullable = false)
+    @Column(name = "longest_streak", nullable = false)
     private Integer longestStreak;
     
-    @Column(nullable = false)
+    @Column(name = "homework_completed", nullable = false)
     private Integer homeworkCompleted;
     
-    @Column(nullable = false)
+    @Column(name = "on_time_submissions", nullable = false)
     private Integer onTimeSubmissions;
     
-    @Column(nullable = false)
+    @Column(name = "perfect_scores", nullable = false)
     private Integer perfectScores;
     
-    @Column(nullable = false)
+    @Column(name = "total_submissions", nullable = false)
     private Integer totalSubmissions;
     
-    @Column(nullable = false)
+    @Column(name = "current_level", nullable = false)
     private Integer currentLevel;
     
-    @Column(nullable = false)
+    @Column(name = "experience_points", nullable = false)
     private Integer experiencePoints;
     
     @Column(name = "last_submission_date")

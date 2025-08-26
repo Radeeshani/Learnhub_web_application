@@ -203,6 +203,45 @@ public class ReminderController {
     }
     
     /**
+     * Create a custom reminder for a homework assignment
+     */
+    @PostMapping("/create")
+    public ResponseEntity<?> createReminder(
+            @RequestBody Map<String, Object> request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            String token = authHeader.substring(7);
+            if (!jwtTokenProvider.validateToken(token)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid or expired token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            Long homeworkId = Long.valueOf(request.get("homeworkId").toString());
+            String reminderType = (String) request.get("reminderType");
+            String customTime = (String) request.get("customTime");
+
+            Reminder reminder = reminderService.createCustomReminder(userId, homeworkId, reminderType, customTime);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Reminder created successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error creating reminder", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create reminder: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * Test endpoint to check if reminders are working
      */
     @GetMapping("/test")

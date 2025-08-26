@@ -121,7 +121,7 @@ public class GamificationService {
      * Get user progress or create if doesn't exist
      */
     private UserProgress getUserProgressOrCreate(Long userId) {
-        Optional<UserProgress> existingProgress = userProgressRepository.findByUserId(userId);
+        Optional<UserProgress> existingProgress = userProgressRepository.findUniqueByUserId(userId);
         
         if (existingProgress.isPresent()) {
             return existingProgress.get();

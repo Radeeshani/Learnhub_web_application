@@ -154,6 +154,72 @@ public class ReminderService {
     }
     
     /**
+     * Create a custom reminder for a student
+     */
+    @Transactional
+    public Reminder createCustomReminder(Long userId, Long homeworkId, String reminderType, String customTime) {
+        try {
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            Homework homework = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new RuntimeException("Homework not found"));
+            
+            // Check if user is a student
+            if (!user.getRole().toString().equals("STUDENT")) {
+                throw new RuntimeException("Only students can create custom reminders");
+            }
+            
+            // Check if user is in the same grade as the homework
+            if (!user.getClassGrade().equals(homework.getClassGrade())) {
+                throw new RuntimeException("You can only create reminders for homework in your grade");
+            }
+            
+            // Check if reminder already exists for this homework and user
+            List<Reminder> existingReminders = reminderRepository.findByUserIdAndHomeworkId(userId, homeworkId);
+            if (!existingReminders.isEmpty()) {
+                throw new RuntimeException("Reminder already exists for this homework");
+            }
+            
+            LocalDateTime dueDate = homework.getDueDate();
+            LocalDateTime reminderTime;
+            
+            // Parse custom time if provided, otherwise use default 24 hours before
+            if (customTime != null && !customTime.isEmpty()) {
+                try {
+                    reminderTime = LocalDateTime.parse(customTime);
+                    // Ensure reminder time is before due date
+                    if (reminderTime.isAfter(dueDate)) {
+                        throw new RuntimeException("Reminder time must be before the due date");
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Invalid custom time format. Use ISO format (YYYY-MM-DDTHH:MM:SS)");
+                }
+            } else {
+                // Default to 24 hours before due date
+                reminderTime = dueDate.minus(24, ChronoUnit.HOURS);
+            }
+            
+            Reminder reminder = new Reminder();
+            reminder.setHomework(homework);
+            reminder.setUser(user);
+            reminder.setReminderType(Reminder.ReminderType.CUSTOM);
+            reminder.setReminderTime(reminderTime);
+            reminder.setDueDate(dueDate);
+            reminder.setTitle("Custom Reminder: " + homework.getTitle());
+            reminder.setMessage(String.format("Custom reminder for your %s homework due on %s", 
+                homework.getSubject(), dueDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))));
+            reminder.setStatus(Reminder.ReminderStatus.PENDING);
+            reminder.setRead(false);
+            
+            return reminderRepository.save(reminder);
+        } catch (Exception e) {
+            logger.error("Error creating custom reminder", e);
+            throw e;
+        }
+    }
+
+    /**
      * Scheduled task to process pending reminders every minute
      */
     @Scheduled(fixedRate = 60000) // Run every minute

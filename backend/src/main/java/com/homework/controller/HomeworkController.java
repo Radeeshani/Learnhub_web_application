@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/homework")
@@ -507,7 +508,20 @@ public class HomeworkController {
             @RequestBody Map<String, Object> gradeRequest,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String teacherEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            String token = authHeader.substring(7);
+            if (!jwtTokenProvider.validateToken(token)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid or expired token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
             Integer grade = (Integer) gradeRequest.get("grade");
             String feedback = (String) gradeRequest.get("feedback");
             

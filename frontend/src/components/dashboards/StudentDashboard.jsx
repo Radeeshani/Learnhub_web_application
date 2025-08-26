@@ -16,7 +16,8 @@ import {
   PaperClipIcon,
   EyeIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import Header from '../common/Header';
 import GamificationWidget from '../gamification/GamificationWidget';
@@ -34,6 +35,7 @@ const StudentDashboard = () => {
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [message, setMessage] = useState('');
+  const [reminderLoading, setReminderLoading] = useState({});
   const { user, token } = useAuth();
 
   const subjects = [
@@ -144,6 +146,28 @@ const StudentDashboard = () => {
         return { status: 'RETURNED', text: 'Returned', class: 'bg-yellow-100 text-yellow-800' };
       default:
         return { status: 'UNKNOWN', text: 'Unknown', class: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
+  const handleCreateReminder = async (homeworkId) => {
+    setReminderLoading(prev => ({ ...prev, [homeworkId]: true }));
+    
+    try {
+      const response = await axios.post('/api/reminders/create', {
+        homeworkId: homeworkId,
+        reminderType: 'CUSTOM',
+        customTime: null // Use default 24 hours before due date
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      setMessage('Reminder added successfully!');
+      setTimeout(() => setMessage(''), 5000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create reminder');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setReminderLoading(prev => ({ ...prev, [homeworkId]: false }));
     }
   };
 
@@ -392,6 +416,16 @@ const StudentDashboard = () => {
                         
                         {/* Action Buttons */}
                         <div className="mt-4 flex items-center space-x-3">
+                          {/* Reminder Button */}
+                          <button
+                            onClick={() => handleCreateReminder(homework.id)}
+                            disabled={reminderLoading[homework.id]}
+                            className="inline-flex items-center px-3 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <BellIcon className="h-4 w-4 mr-2" />
+                            {reminderLoading[homework.id] ? 'Adding...' : 'Add Reminder'}
+                          </button>
+                          
                           {getSubmissionStatus(homework.id).status === 'NOT_SUBMITTED' && (
                             <button
                               onClick={() => handleSubmitHomework(homework)}

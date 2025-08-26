@@ -82,7 +82,7 @@ const Register = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8080/api/profile-pictures/upload', {
+              const response = await fetch('http://localhost:8080/api/profile-pictures/upload', {
         method: 'POST',
         body: formData,
       });

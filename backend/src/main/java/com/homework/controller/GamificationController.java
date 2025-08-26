@@ -213,9 +213,8 @@ public class GamificationController {
     
     @GetMapping("/levels/next")
     public ResponseEntity<?> getNextUserLevel(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = null;
         try {
-            Long userId = null;
-            
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 try {
                     String token = authHeader.substring(7); // Remove "Bearer " prefix
@@ -234,18 +233,22 @@ public class GamificationController {
                 logger.debug("Using default user ID: {}", userId);
             }
             
+            logger.debug("Getting next level for user ID: {}", userId);
             UserLevelResponse nextLevel = gamificationService.getNextUserLevel(userId);
             
             if (nextLevel == null) {
+                logger.info("User ID {} has reached maximum level", userId);
                 return ResponseEntity.ok(Map.of("message", "You've reached the maximum level!"));
             }
             
+            logger.debug("Found next level: {} for user ID: {}", nextLevel.getName(), userId);
             return ResponseEntity.ok(nextLevel);
             
         } catch (Exception e) {
-            logger.error("Failed to get next user level", e);
+            logger.error("Failed to get next user level for user ID: {}", userId, e);
             Map<String, String> error = new HashMap<>();
             error.put("message", "Failed to fetch next level: " + e.getMessage());
+            error.put("details", e.getClass().getSimpleName());
             return ResponseEntity.badRequest().body(error);
         }
     }

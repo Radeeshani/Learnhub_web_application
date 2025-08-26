@@ -28,6 +28,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @Query("SELECT r FROM Reminder r WHERE r.homework.id = :homeworkId")
     List<Reminder> findByHomeworkId(@Param("homeworkId") Long homeworkId);
     
+    // Find reminders for a specific user and homework
+    @Query("SELECT r FROM Reminder r WHERE r.user.id = :userId AND r.homework.id = :homeworkId")
+    List<Reminder> findByUserIdAndHomeworkId(@Param("userId") Long userId, @Param("homeworkId") Long homeworkId);
+    
     // Find overdue reminders for a user
     @Query("SELECT r FROM Reminder r WHERE r.user.id = :userId AND r.reminderType = 'OVERDUE' AND r.status = 'PENDING'")
     List<Reminder> findOverdueRemindersByUserId(@Param("userId") Long userId);

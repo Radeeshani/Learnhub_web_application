@@ -16,8 +16,7 @@ const Profile = () => {
     email: '',
     phoneNumber: '',
     classGrade: '',
-    subjectTaught: '',
-    studentId: ''
+    subjectTaught: ''
   });
 
   const [profilePicture, setProfilePicture] = useState(null);
@@ -33,8 +32,7 @@ const Profile = () => {
         email: user.email || '',
         phoneNumber: user.phoneNumber || '',
         classGrade: user.classGrade || '',
-        subjectTaught: user.subjectTaught || '',
-        studentId: user.studentId || ''
+        subjectTaught: user.subjectTaught || ''
       });
       
       // Set profile picture preview if exists
@@ -193,8 +191,7 @@ const Profile = () => {
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
       classGrade: user.classGrade || '',
-      subjectTaught: user.subjectTaught || '',
-      studentId: user.studentId || ''
+      subjectTaught: user.subjectTaught || ''
     });
     
     // Reset profile picture
@@ -557,24 +554,6 @@ const Profile = () => {
                     )}
                   </div>
                 </>
-              )}
-
-              {user.role === 'STUDENT' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Student ID
-                  </label>
-                  <input
-                    type="text"
-                    name="studentId"
-                    value={formData.studentId}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50'
-                    }`}
-                  />
-                </div>
               )}
             </div>
           </div>

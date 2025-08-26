@@ -3,6 +3,7 @@ package com.homework.repository;
 import com.homework.entity.UserProgress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +16,12 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
      * Find user progress by user ID
      */
     Optional<UserProgress> findByUserId(Long userId);
+    
+    /**
+     * Find user progress by user ID with explicit query to ensure uniqueness
+     */
+    @Query("SELECT up FROM UserProgress up WHERE up.userId = :userId")
+    Optional<UserProgress> findUniqueByUserId(@Param("userId") Long userId);
     
     /**
      * Find top users by total points (leaderboard)

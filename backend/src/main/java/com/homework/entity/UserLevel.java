@@ -14,22 +14,22 @@ public class UserLevel {
     @Column(nullable = false, unique = true)
     private String name; // "Novice", "Apprentice", "Scholar", "Master", "Grandmaster"
     
-    @Column(nullable = false, unique = true)
+    @Column(name = "level_number", nullable = false, unique = true)
     private Integer levelNumber; // 1, 2, 3, 4, 5
     
-    @Column(nullable = false)
+    @Column(name = "points_required", nullable = false)
     private Integer pointsRequired; // 0, 100, 500, 1000, 2500
     
     @Column(nullable = false)
     private String color; // Bronze, Silver, Gold, Platinum, Diamond
     
-    @Column(nullable = false)
+    @Column(name = "special_privileges", nullable = false)
     private String specialPrivileges; // "Can create study groups", "Access to premium content"
     
-    @Column(nullable = false)
+    @Column(name = "level_up_animation", nullable = false)
     private String levelUpAnimation; // Custom animation for level up
     
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive;
     
     @Column(name = "created_at")

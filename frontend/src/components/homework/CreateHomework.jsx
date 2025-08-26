@@ -222,7 +222,7 @@ const CreateHomework = () => {
                       className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
                     >
                       <option value="">Select Grade</option>
-                      {['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade'].map((grade, index) => (
+                      {['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'].map((grade, index) => (
                         <option key={index + 1} value={grade}>
                           {grade}
                         </option>
