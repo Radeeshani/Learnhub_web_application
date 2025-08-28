@@ -29,7 +29,8 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/test/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/actuator/**").permitAll()
-                .anyRequest().permitAll() // Temporarily allow all requests
+                .requestMatchers("/api/v1/files/**").permitAll()
+                .anyRequest().permitAll()
             );
         
         return http.build();
