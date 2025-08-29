@@ -30,7 +30,7 @@ const Reminders = () => {
       console.log('User:', user);
       console.log('Auth header:', axios.defaults.headers.common['Authorization']);
       
-      const response = await axios.get('/api/reminders/user', {
+      const response = await axios.get('/api/homework/reminders/user', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ const Reminders = () => {
 
   const markAsRead = async (reminderId) => {
     try {
-      await axios.put(`/api/reminders/${reminderId}/read`);
+      await axios.put(`/api/homework/reminders/${reminderId}/read`);
       // Update local state
       setReminders(prev => prev.map(r => 
         r.id === reminderId ? { ...r, isRead: true } : r

@@ -25,6 +25,11 @@ public class RegisterRequest {
     private String subjectTaught;
     private String phoneNumber;
     private String profilePicture;
+    private String address;
+    private String parentFirstName;
+    private String parentLastName;
+
+
 
     // Getters and Setters
     public String getFirstName() {
@@ -106,4 +111,32 @@ public class RegisterRequest {
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
     }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getParentFirstName() {
+        return parentFirstName;
+    }
+
+    public void setParentFirstName(String parentFirstName) {
+        this.parentFirstName = parentFirstName;
+    }
+
+    public String getParentLastName() {
+        return parentLastName;
+    }
+
+    public void setParentLastName(String parentLastName) {
+        this.parentLastName = parentLastName;
+    }
+
+
+
+
 } 

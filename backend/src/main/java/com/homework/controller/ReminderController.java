@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/reminders")
+@RequestMapping("/homework/reminders")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class ReminderController {
     

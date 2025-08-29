@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiPhone, FiBook, FiAward, FiCamera, FiBookOpen, FiUsers, FiStar } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiPhone, FiBook, FiAward, FiCamera, FiBookOpen, FiUsers, FiStar, FiMapPin } from 'react-icons/fi';
 
 const Register = () => {
   const roles = [
@@ -30,7 +30,10 @@ const Register = () => {
     phoneNumber: '',
     classGrade: '',
     subjectTaught: '',
-    studentId: ''
+    studentId: '',
+    address: '',
+    parentFirstName: '',
+    parentLastName: ''
   });
 
   const [profilePicture, setProfilePicture] = useState(null);
@@ -456,6 +459,28 @@ const Register = () => {
                     </div>
                   </motion.div>
 
+                  {/* Address Field */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 1.3 }}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Address
+                    </label>
+                    <div className="relative group">
+                      <FiMapPin className="absolute left-3 top-3 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        rows="3"
+                        className="pl-10 pr-3 py-3 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm resize-none"
+                        placeholder="Enter your full address..."
+                      />
+                    </div>
+                  </motion.div>
+
                   {/* Role-specific fields */}
                   {formData.role === 'STUDENT' && (
                     <motion.div
@@ -487,6 +512,59 @@ const Register = () => {
                           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
+                        </div>
+                      </div>
+                      
+                      {/* Parent Information */}
+                      <div className="mt-8 pt-6 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6">
+                        <div className="flex items-center space-x-3 mb-6">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <FiUser className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h5 className="text-xl font-bold text-gray-800">Parent Information</h5>
+                            <p className="text-sm text-gray-600">Please provide your parent's contact details</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                              Parent First Name
+                            </label>
+                            <div className="relative group">
+                              <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                              <input
+                                type="text"
+                                name="parentFirstName"
+                                value={formData.parentFirstName}
+                                onChange={handleChange}
+                                className="pl-10 pr-3 py-3 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm"
+                                placeholder="Enter parent's first name"
+                                required
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                              Parent Last Name
+                            </label>
+                            <div className="relative group">
+                              <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                              <input
+                                type="text"
+                                name="parentLastName"
+                                value={formData.parentLastName}
+                                onChange={handleChange}
+                                className="pl-10 pr-3 py-3 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm"
+                                placeholder="Enter parent's last name"
+                                required
+                              />
+                            </div>
+                          </div>
+                          
+
                         </div>
                       </div>
                     </motion.div>

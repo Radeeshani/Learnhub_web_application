@@ -49,6 +49,11 @@ public class AuthController {
             response.setSubjectTaught(user.getSubjectTaught());
             response.setPhoneNumber(user.getPhoneNumber());
             response.setProfilePicture(user.getProfilePicture());
+            response.setAddress(user.getAddress());
+            response.setParentFirstName(user.getParentFirstName());
+            response.setParentLastName(user.getParentLastName());
+
+
             response.setToken(jwtTokenProvider.generateToken(user.getEmail(), user.getRole().toString(), user.getId()));
 
             logger.debug("Login successful for email: {}", request.getEmail());
@@ -76,10 +81,17 @@ public class AuthController {
             user.setSubjectTaught(request.getSubjectTaught());
             user.setPhoneNumber(request.getPhoneNumber());
             user.setProfilePicture(request.getProfilePicture());
+            user.setAddress(request.getAddress());
 
             // If registering as a parent, convert studentId to Long
             if (UserRole.valueOf(request.getRole()) == UserRole.PARENT && request.getParentOfStudentId() != null) {
                 user.setParentOfStudentId(Long.parseLong(request.getParentOfStudentId()));
+            }
+
+            // If registering as a student, set parent information
+            if (UserRole.valueOf(request.getRole()) == UserRole.STUDENT) {
+                user.setParentFirstName(request.getParentFirstName());
+                user.setParentLastName(request.getParentLastName());
             }
 
             User savedUser = userService.registerUser(user);
@@ -96,6 +108,11 @@ public class AuthController {
             response.setSubjectTaught(savedUser.getSubjectTaught());
             response.setPhoneNumber(savedUser.getPhoneNumber());
             response.setProfilePicture(savedUser.getProfilePicture());
+            response.setAddress(savedUser.getAddress());
+            response.setParentFirstName(savedUser.getParentFirstName());
+            response.setParentLastName(savedUser.getParentLastName());
+
+
             response.setToken(jwtTokenProvider.generateToken(savedUser.getEmail(), savedUser.getRole().toString(), savedUser.getId()));
 
             logger.debug("Registration successful for email: {}", request.getEmail());
@@ -156,6 +173,11 @@ public class AuthController {
             userInfo.setSubjectTaught(user.getSubjectTaught());
             userInfo.setPhoneNumber(user.getPhoneNumber());
             userInfo.setProfilePicture(user.getProfilePicture());
+            userInfo.setAddress(user.getAddress());
+            userInfo.setParentFirstName(user.getParentFirstName());
+            userInfo.setParentLastName(user.getParentLastName());
+
+
 
             return ResponseEntity.ok(userInfo);
 

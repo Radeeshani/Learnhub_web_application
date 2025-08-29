@@ -31,7 +31,7 @@ const Sidebar = ({ children }) => {
   const fetchUnreadCounts = async () => {
     try {
       // Fetch unread reminders count
-      const remindersResponse = await axios.get('/api/reminders/user/unread');
+      const remindersResponse = await axios.get('/api/homework/reminders/user/unread');
       setUnreadReminders(remindersResponse.data.length);
       
       // Fetch unread notifications count
@@ -45,7 +45,7 @@ const Sidebar = ({ children }) => {
 
   const fetchReminders = async () => {
     try {
-      const response = await axios.get('/api/reminders/user');
+      const response = await axios.get('/api/homework/reminders/user');
       setReminders(response.data);
     } catch (error) {
       console.error('Error fetching reminders:', error);
@@ -63,7 +63,7 @@ const Sidebar = ({ children }) => {
 
   const markReminderAsRead = async (reminderId) => {
     try {
-      await axios.put(`/api/reminders/${reminderId}/read`);
+      await axios.put(`/api/homework/reminders/${reminderId}/read`);
       setReminders(prev => prev.map(r => 
         r.id === reminderId ? { ...r, isRead: true } : r
       ));

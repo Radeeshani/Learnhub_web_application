@@ -46,6 +46,20 @@ public class User {
     @Column(name = "parent_of_student_id")
     private Long parentOfStudentId;
     
+    // Address field
+    private String address;
+    
+    // Parent information for students
+    @Column(name = "parent_first_name")
+    private String parentFirstName;
+    
+    @Column(name = "parent_last_name")
+    private String parentLastName;
+    
+
+    
+
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

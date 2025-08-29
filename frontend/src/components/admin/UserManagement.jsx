@@ -41,7 +41,9 @@ const UserManagement = () => {
     isActive: true,
     subjectTaught: '',
     classGrade: '',
-    studentId: ''
+    studentId: '',
+    parentFirstName: '',
+    parentLastName: ''
   });
 
   useEffect(() => {
@@ -72,6 +74,19 @@ const UserManagement = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    
+    // Validate teacher requirements
+    if (userForm.role === 'TEACHER') {
+      if (!userForm.classGrade) {
+        showError('Please select a grade level for the teacher');
+        return;
+      }
+      if (!userForm.subjectTaught) {
+        showError('Please select a subject for the teacher');
+        return;
+      }
+    }
+    
     try {
       await axios.post('/api/admin/users', userForm, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -88,6 +103,19 @@ const UserManagement = () => {
 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
+    
+    // Validate teacher requirements
+    if (userForm.role === 'TEACHER') {
+      if (!userForm.classGrade) {
+        showError('Please select a grade level for the teacher');
+        return;
+      }
+      if (!userForm.subjectTaught) {
+        showError('Please select a subject for the teacher');
+        return;
+      }
+    }
+    
     try {
       await axios.put(`/api/admin/users/${selectedUser.id}`, userForm, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -131,16 +159,27 @@ const UserManagement = () => {
       isActive: true,
       subjectTaught: '',
       classGrade: '',
-      studentId: ''
+      studentId: '',
+      parentFirstName: '',
+      parentLastName: ''
     });
   };
   
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setUserForm(prev => ({
-      ...prev,
-      [name]: type === 'radio' ? value === 'true' : value
-    }));
+    setUserForm(prev => {
+      const updatedForm = {
+        ...prev,
+        [name]: type === 'radio' ? value === 'true' : value
+      };
+      
+      // Clear subject selection when grade changes for teachers
+      if (name === 'classGrade' && prev.role === 'TEACHER') {
+        updatedForm.subjectTaught = '';
+      }
+      
+      return updatedForm;
+    });
   };
 
   const openEditModal = (user) => {
@@ -157,7 +196,9 @@ const UserManagement = () => {
       isActive: user.isActive,
       subjectTaught: user.subjectTaught || '',
       classGrade: user.classGrade || '',
-      studentId: user.studentId || ''
+      studentId: user.studentId || '',
+      parentFirstName: user.parentFirstName || '',
+      parentLastName: user.parentLastName || ''
     });
     setShowEditModal(true);
   };
@@ -347,7 +388,7 @@ const UserManagement = () => {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="text-xl text-gray-600 max-w-2xl mx-auto"
             >
-              Manage all users in the system - teachers, students, parents, and administrators
+              Manage all users in the system - teachers, students, and administrators
             </motion.p>
             
             <motion.div 
@@ -620,7 +661,7 @@ const UserManagement = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-3xl p-6 text-white">
@@ -765,6 +806,22 @@ const UserManagement = () => {
                             />
                             <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                           </div>
+                        </div>
+                      </div>
+                      
+                      {/* Address Field */}
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <div className="relative">
+                          <textarea
+                            name="address"
+                            value={userForm.address}
+                            onChange={handleInputChange}
+                            rows="3"
+                            className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                            placeholder="Enter full address..."
+                          />
+                          <FiMapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -963,6 +1020,82 @@ const UserManagement = () => {
                               <FiBookOpen className="h-5 w-5 text-purple-600" />
                             </div>
                           </div>
+                          
+                          {/* Parent Information */}
+                          <div className="mt-8 pt-6 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 shadow-sm">
+                            <div className="flex items-center space-x-3 mb-8">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                <FiUser className="h-6 w-6 text-white" />
+                              </div>
+                              <div>
+                                <h5 className="text-2xl font-bold text-gray-800">Parent Information</h5>
+                                <p className="text-base text-gray-600">Guardian contact details for the student</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                              <div className="space-y-3">
+                                <label className="block text-base font-semibold text-gray-700 flex items-center space-x-2">
+                                  <FiUser className="h-5 w-5 text-blue-500" />
+                                  <span>Parent First Name</span>
+                                </label>
+                                <div className="relative group">
+                                  <input
+                                    type="text"
+                                    name="parentFirstName"
+                                    value={userForm.parentFirstName || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md text-base"
+                                    placeholder="Enter parent's first name"
+                                  />
+                                  <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+                                  <FiUser className="h-4 w-4 text-blue-500" />
+                                  <span>Parent Last Name</span>
+                                </label>
+                                <div className="relative group">
+                                  <input
+                                    type="text"
+                                    name="parentLastName"
+                                    value={userForm.parentLastName || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md text-base"
+                                    placeholder="Enter parent's last name"
+                                  />
+                                  <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-8 space-y-3">
+                              <label className="block text-base font-semibold text-gray-700 flex items-center space-x-2">
+                                <FiMapPin className="h-5 w-5 text-blue-500" />
+                                <span>Address</span>
+                              </label>
+                              <div className="relative group">
+                                <textarea
+                                  name="address"
+                                  value={userForm.address || ''}
+                                  onChange={handleInputChange}
+                                  rows="5"
+                                  className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md resize-none text-base"
+                                  placeholder="Enter student's full address..."
+                                />
+                                <FiMapPin className="absolute left-4 top-4 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                              </div>
+                            </div>
+                            
+                            <div className="mt-8 pt-6 border-t border-blue-200">
+                              <div className="flex items-center space-x-3 text-sm text-blue-600 bg-blue-100 px-4 py-3 rounded-lg">
+                                <FiUser className="h-4 w-4" />
+                                <span>This information helps us maintain proper communication with parents regarding their child's academic progress.</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -998,7 +1131,7 @@ const UserManagement = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-3xl p-6 text-white">
@@ -1231,7 +1364,7 @@ const UserManagement = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-3xl p-6 text-white">
@@ -1355,7 +1488,6 @@ const UserManagement = () => {
                               <option value="ADMIN">Admin</option>
                               <option value="TEACHER">Teacher</option>
                               <option value="STUDENT">Student</option>
-                              <option value="PARENT">Parent</option>
                             </select>
                             <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1374,6 +1506,22 @@ const UserManagement = () => {
                             />
                             <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                           </div>
+                        </div>
+                      </div>
+                      
+                      {/* Address Field */}
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <div className="relative">
+                          <textarea
+                            name="address"
+                            value={userForm.address}
+                            onChange={handleInputChange}
+                            rows="3"
+                            className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                            placeholder="Enter full address..."
+                          />
+                          <FiMapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -1442,19 +1590,89 @@ const UserManagement = () => {
                           <FiBookOpen className="h-5 w-5 text-purple-600" />
                           <h4 className="text-lg font-semibold text-gray-900">Teacher Information</h4>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Subject Taught</label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name="subjectTaught"
-                              value={userForm.subjectTaught || ''}
-                              onChange={handleInputChange}
-                              className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                              placeholder="e.g., Mathematics, English, Science"
-                            />
-                            <FiBookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <div className="space-y-4">
+                          {/* Grade Selection for Teachers */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                            <div className="relative">
+                              <select
+                                name="classGrade"
+                                value={userForm.classGrade || ''}
+                                onChange={handleInputChange}
+                                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 appearance-none"
+                                required
+                              >
+                                <option value="">Select Grade</option>
+                                <option value="1st Grade">Grade 01</option>
+                                <option value="2nd Grade">Grade 02</option>
+                                <option value="3rd Grade">Grade 03</option>
+                                <option value="4th Grade">Grade 4</option>
+                                <option value="5th Grade">Grade 5</option>
+                                <option value="6th Grade">Grade 6</option>
+                              </select>
+                              <FiBookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            </div>
                           </div>
+
+                          {/* Subject Selection based on Grade */}
+                          {userForm.classGrade && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Taught</label>
+                              <div className="relative">
+                                <select
+                                  name="subjectTaught"
+                                  value={userForm.subjectTaught || ''}
+                                  onChange={handleInputChange}
+                                  className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 appearance-none"
+                                  required
+                                >
+                                  <option value="">Select Subject</option>
+                                  {userForm.classGrade === '1st Grade' && (
+                                    <>
+                                      <option value="Maths Concept">Maths Concept</option>
+                                      <option value="Writing">Writing</option>
+                                      <option value="Concept">Concept</option>
+                                    </>
+                                    )}
+                                  {(userForm.classGrade === '2nd Grade' || userForm.classGrade === '3rd Grade') && (
+                                    <>
+                                      <option value="Writing">Writing</option>
+                                      <option value="Reading">Reading</option>
+                                      <option value="Speaking">Speaking</option>
+                                      <option value="Maths">Maths</option>
+                                    </>
+                                  )}
+                                  {userForm.classGrade === '4th Grade' && (
+                                    <>
+                                      <option value="Maths">Maths</option>
+                                      <option value="English">English</option>
+                                      <option value="IT">IT</option>
+                                      <option value="French">French</option>
+                                      <option value="Music">Music</option>
+                                      <option value="Environment">Environment</option>
+                                    </>
+                                  )}
+                                  {(userForm.classGrade === '5th Grade' || userForm.classGrade === '6th Grade') && (
+                                    <>
+                                      <option value="English">English</option>
+                                      <option value="Maths">Maths</option>
+                                      <option value="Science">Science</option>
+                                      <option value="Geography">Geography</option>
+                                      <option value="Music">Music</option>
+                                      <option value="Art">Art</option>
+                                      <option value="Dance">Dance</option>
+                                      <option value="History">History</option>
+                                      <option value="French">French</option>
+                                      <option value="Chinese">Chinese</option>
+                                    </>
+                                  )}
+                                </select>
+                                <FiBookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1500,6 +1718,82 @@ const UserManagement = () => {
                               placeholder="e.g., STU001, STU002"
                             />
                               <FiBookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            </div>
+                          </div>
+                          
+                          {/* Parent Information */}
+                          <div className="mt-8 pt-6 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 shadow-sm">
+                            <div className="flex items-center space-x-3 mb-8">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                <FiUser className="h-6 w-6 text-white" />
+                              </div>
+                              <div>
+                                <h5 className="text-2xl font-bold text-gray-800">Parent Information</h5>
+                                <p className="text-base text-gray-600">Guardian contact details for the student</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                              <div className="space-y-3">
+                                <label className="block text-base font-semibold text-gray-700 flex items-center space-x-2">
+                                  <FiUser className="h-5 w-5 text-blue-500" />
+                                  <span>Parent First Name</span>
+                                </label>
+                                <div className="relative group">
+                                  <input
+                                    type="text"
+                                    name="parentFirstName"
+                                    value={userForm.parentFirstName || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md text-base"
+                                    placeholder="Enter parent's first name"
+                                  />
+                                  <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <label className="block text-base font-semibold text-gray-700 flex items-center space-x-2">
+                                  <FiUser className="h-5 w-5 text-blue-500" />
+                                  <span>Parent Last Name</span>
+                                </label>
+                                <div className="relative group">
+                                  <input
+                                    type="text"
+                                    name="parentLastName"
+                                    value={userForm.parentLastName || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md text-base"
+                                    placeholder="Enter parent's last name"
+                                  />
+                                  <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-8 space-y-3">
+                              <label className="block text-base font-semibold text-gray-700 flex items-center space-x-2">
+                                <FiMapPin className="h-5 w-5 text-blue-500" />
+                                <span>Address</span>
+                              </label>
+                              <div className="relative group">
+                                <textarea
+                                  name="address"
+                                  value={userForm.address || ''}
+                                  onChange={handleInputChange}
+                                  rows="5"
+                                  className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm shadow-sm group-hover:shadow-md resize-none text-base"
+                                  placeholder="Enter student's full address..."
+                                />
+                                <FiMapPin className="absolute left-4 top-4 text-gray-400 group-focus-within:text-blue-500 transition-colors h-5 w-5" />
+                              </div>
+                            </div>
+                            
+                            <div className="mt-8 pt-6 border-t border-blue-200">
+                              <div className="flex items-center space-x-3 text-sm text-blue-600 bg-blue-100 px-4 py-3 rounded-lg">
+                                <FiUser className="h-4 w-4" />
+                                <span>This information helps us maintain proper communication with parents regarding their child's academic progress.</span>
+                              </div>
                             </div>
                           </div>
                         </div>

@@ -21,7 +21,7 @@ const ReminderPanel = ({ isOpen, onClose }) => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get('/api/reminders/user/unread', {
+      const response = await axios.get('/api/homework/reminders/user/unread', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -51,7 +51,7 @@ const ReminderPanel = ({ isOpen, onClose }) => {
 
   const markAsRead = async (reminderId) => {
     try {
-      await axios.put(`/api/reminders/${reminderId}/read`, {}, {
+      await axios.put(`/api/homework/reminders/${reminderId}/read`, {}, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -66,7 +66,7 @@ const ReminderPanel = ({ isOpen, onClose }) => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put('/api/reminders/mark-all-read', {}, {
+      await axios.put('/api/homework/reminders/mark-all-read', {}, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
