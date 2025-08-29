@@ -63,7 +63,7 @@ public class HomeworkService {
     @Autowired
     private NotificationRepository notificationRepository;
     
-    private final Path uploadPath = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
+    private final Path uploadPath = Paths.get("uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
         try {
@@ -73,18 +73,27 @@ public class HomeworkService {
         }
     }
     
-    public Homework createHomework(HomeworkRequest request, MultipartFile file, String teacherEmail) throws Exception {
+    public Homework createHomework(HomeworkRequest request, MultipartFile file, MultipartFile audioFile, String teacherEmail) throws Exception {
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new Exception("Teacher not found"));
         
         String fileName = null;
         String fileUrl = null;
+        String audioFileName = null;
+        String audioFileUrl = null;
         
         if (file != null && !file.isEmpty()) {
             fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
             Path targetLocation = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation);
             fileUrl = "/uploads/homework/" + fileName;
+        }
+        
+        if (audioFile != null && !audioFile.isEmpty()) {
+            audioFileName = UUID.randomUUID().toString() + "_" + audioFile.getOriginalFilename();
+            Path audioTargetLocation = uploadPath.resolve(audioFileName);
+            Files.copy(audioFile.getInputStream(), audioTargetLocation);
+            audioFileUrl = "/uploads/homework/" + audioFileName;
         }
         
         Homework homework = new Homework();
@@ -98,6 +107,8 @@ public class HomeworkService {
         homework.setTeacherId(teacher.getId());
         homework.setFileName(fileName);
         homework.setFileUrl(fileUrl);
+        homework.setAudioFileName(audioFileName);
+        homework.setAudioFileUrl(audioFileUrl);
         
         // Create homework-class relationship
         if (request.getClassId() != null) {
@@ -124,7 +135,7 @@ public class HomeworkService {
         return savedHomework;
     }
 
-    public Homework updateHomework(Long id, HomeworkRequest request, MultipartFile file, String teacherEmail) throws Exception {
+    public Homework updateHomework(Long id, HomeworkRequest request, MultipartFile file, MultipartFile audioFile, String teacherEmail) throws Exception {
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new Exception("Teacher not found"));
         
@@ -148,6 +159,21 @@ public class HomeworkService {
             
             homework.setFileName(fileName);
             homework.setFileUrl("/uploads/homework/" + fileName);
+        }
+        
+        // If new audio file is uploaded, delete old audio file and save new one
+        if (audioFile != null && !audioFile.isEmpty()) {
+            if (homework.getAudioFileName() != null) {
+                Path oldAudioFile = uploadPath.resolve(homework.getAudioFileName());
+                Files.deleteIfExists(oldAudioFile);
+            }
+            
+            String audioFileName = UUID.randomUUID().toString() + "_" + audioFile.getOriginalFilename();
+            Path audioTargetLocation = uploadPath.resolve(audioFileName);
+            Files.copy(audioFile.getInputStream(), audioTargetLocation);
+            
+            homework.setAudioFileName(audioFileName);
+            homework.setAudioFileUrl("/uploads/homework/" + audioFileName);
         }
         
         homework.setTitle(request.getTitle());

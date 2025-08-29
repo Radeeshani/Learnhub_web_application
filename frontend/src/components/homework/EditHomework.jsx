@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -11,7 +11,11 @@ import {
   FiFileText,
   FiCheckCircle,
   FiArrowLeft,
-  FiUpload
+  FiUpload,
+  FiMic,
+  FiStopCircle,
+  FiPlay,
+  FiTrash2
 } from 'react-icons/fi';
 
 const EditHomework = () => {
@@ -28,6 +32,11 @@ const EditHomework = () => {
     dueDate: homework?.dueDate ? new Date(homework.dueDate).toISOString().slice(0, 16) : ''
   });
   const [file, setFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -36,6 +45,7 @@ const EditHomework = () => {
   const [fetchingClasses, setFetchingClasses] = useState(true);
   const navigate = useNavigate();
   const { token, user } = useAuth();
+  const audioRef = useRef(null);
 
   const subjects = [
     'Mathematics',
@@ -47,6 +57,116 @@ const EditHomework = () => {
     'Music',
     'Physical Education'
   ];
+
+  // Audio recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        
+        // Create a File object from the blob
+        const newAudioFile = new File([blob], 'homework_audio.wav', { type: 'audio/wav' });
+        setAudioFile(newAudioFile);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setError('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const playAudio = () => {
+    if (audioRef.current && audioRef.current.src) {
+      audioRef.current.play().catch(error => {
+        console.log('Audio play failed:', error);
+      });
+    }
+  };
+
+  const deleteAudio = () => {
+    setAudioBlob(null);
+    setAudioUrl('');
+    setAudioFile(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  // Fetch homework data if not available in state
+  useEffect(() => {
+    const fetchHomeworkData = async () => {
+      if (!token || !id) return;
+      
+      try {
+        const response = await axios.get(`/api/homework/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+         const homeworkData = response.data;
+         console.log('Fetched homework data:', homeworkData);
+         setFormData({
+           title: homeworkData.title || '',
+           description: homeworkData.description || '',
+           subject: homeworkData.subject || '',
+           grade: homeworkData.grade || '',
+           classGrade: homeworkData.classGrade || '',
+           classId: homeworkData.classId || '',
+           dueDate: homeworkData.dueDate ? new Date(homeworkData.dueDate).toISOString().slice(0, 16) : ''
+         });
+         
+         // Set existing file info
+         if (homeworkData.fileName) {
+           setPreview(homeworkData.fileUrl ? `/api${homeworkData.fileUrl}` : '');
+         }
+         
+         // Set existing audio info
+         if (homeworkData.audioFileName) {
+           console.log('Setting audio info:', {
+             audioFileName: homeworkData.audioFileName,
+             audioFileUrl: homeworkData.audioFileUrl
+           });
+           setAudioFile({ name: homeworkData.audioFileName });
+           const audioUrl = `/api/v1/files/download/homework/${homeworkData.audioFileName}`;
+           console.log('Setting audio URL:', audioUrl);
+           setAudioUrl(audioUrl);
+         }
+      } catch (error) {
+        console.error('Error fetching homework data:', error);
+        setError('Failed to fetch homework data. Please try again.');
+      }
+    };
+
+    // Only fetch if we don't have homework data in state
+    if (!homework && id) {
+      fetchHomeworkData();
+    }
+  }, [token, id, homework]);
 
   // Fetch teacher's assigned classes
   useEffect(() => {
@@ -69,7 +189,7 @@ const EditHomework = () => {
               ...prev,
               classId: matchingClass.id,
               classGrade: matchingClass.gradeLevel || homework.classGrade,
-              grade: matchingClass.gradeLevel ? parseInt(matchingClass.gradeLevel.replace(/\D/g, '')) : homework.grade
+              grade: matchingClass.gradeLevel ? parseInt(matchingClass.gradeLevel.replace(/\D/g, '')) : ''
             }));
           }
         }
@@ -83,6 +203,15 @@ const EditHomework = () => {
 
     fetchTeacherClasses();
   }, [token, user, homework]);
+
+  // Update audio source when audioUrl changes
+  useEffect(() => {
+    console.log('Audio URL changed:', audioUrl);
+    if (audioRef.current && audioUrl) {
+      console.log('Setting audio source:', audioUrl);
+      audioRef.current.src = audioUrl;
+    }
+  }, [audioUrl]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -151,6 +280,10 @@ const EditHomework = () => {
         formPayload.append('file', file);
       }
       
+      if (audioFile) {
+        formPayload.append('audioFile', audioFile);
+      }
+      
       // Convert date string to ISO format
       const dueDate = new Date(formData.dueDate).toISOString();
       
@@ -162,7 +295,8 @@ const EditHomework = () => {
         grade: formData.grade,
         classGrade: formData.classGrade,
         classId: formData.classId,
-        dueDate: dueDate
+        dueDate: dueDate,
+        hasAudio: !!audioFile
       });
       
       // Append individual fields
@@ -425,6 +559,105 @@ const EditHomework = () => {
                         onChange={handleFileChange}
                       />
                     </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Audio Instructions */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Audio Instructions (Optional)
+                </label>
+                <div className="mt-1">
+                  <div className="space-y-4">
+                    {/* Recording Controls */}
+                    <div className="flex items-center space-x-4">
+                      {!isRecording ? (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={startRecording}
+                          className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          <FiMic className="h-5 w-5 mr-2" />
+                          Start Recording
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={stopRecording}
+                          className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          <FiStopCircle className="h-5 w-5 mr-2" />
+                          Stop Recording
+                        </motion.button>
+                      )}
+                    </div>
+
+                     {/* Audio Player */}
+                     {(audioUrl || (homework?.audioFileName && !audioFile)) && (
+                       <motion.div 
+                         initial={{ opacity: 0, y: 10 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         className="bg-blue-50 rounded-lg p-4 border border-blue-200"
+                       >
+                         <div className="flex items-center justify-between mb-3">
+                           <h4 className="text-sm font-medium text-blue-800">Audio Preview</h4>
+                           <button
+                             type="button"
+                             onClick={deleteAudio}
+                             className="text-red-500 hover:text-red-700 transition-colors"
+                           >
+                             <FiTrash2 className="h-5 w-5" />
+                           </button>
+                         </div>
+                         
+                         <audio 
+                           ref={audioRef} 
+                           src={audioUrl || (homework?.audioFileName ? `/api/v1/files/download/homework/${homework.audioFileName}` : '')} 
+                           className="w-full" 
+                           controls 
+                         />
+                         
+                         <div className="mt-3 flex items-center space-x-3">
+                           <button
+                             type="button"
+                             onClick={playAudio}
+                             className="flex items-center px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                           >
+                             <FiPlay className="h-4 w-4 mr-1" />
+                             Play
+                           </button>
+                           <span className="text-sm text-blue-600">
+                             {audioFile ? `New recording: ${audioFile.name}` : 
+                              homework?.audioFileName ? `Current: ${homework.audioFileName.replace(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_/, '')}` : 'Audio recorded'}
+                           </span>
+                         </div>
+                       </motion.div>
+                     )}
+
+                    {/* Recording Status */}
+                    {isRecording && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center text-red-600 text-sm"
+                      >
+                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        Recording in progress...
+                      </motion.div>
+                    )}
+
+                     {/* Current Audio Info */}
+                     {homework?.audioFileName && !audioFile && !audioUrl && (
+                       <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                         <p>Current audio: {homework.audioFileName?.replace(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_/, '')}</p>
+                         <p className="text-xs text-gray-500 mt-1">Record new audio to replace the existing one</p>
+                       </div>
+                     )}
                   </div>
                 </div>
               </div>

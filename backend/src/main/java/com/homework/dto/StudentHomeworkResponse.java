@@ -17,6 +17,8 @@ public class StudentHomeworkResponse {
     private LocalDateTime dueDate;
     private String fileName;
     private String fileUrl;
+    private String audioFileName;
+    private String audioFileUrl;
     private Long teacherId;
     private String teacherName;
     private LocalDateTime createdAt;
@@ -37,6 +39,8 @@ public class StudentHomeworkResponse {
         this.dueDate = homework.getDueDate();
         this.fileName = homework.getFileName();
         this.fileUrl = homework.getFileUrl();
+        this.audioFileName = homework.getAudioFileName();
+        this.audioFileUrl = homework.getAudioFileUrl();
         this.teacherId = homework.getTeacherId();
         this.createdAt = homework.getCreatedAt();
         this.updatedAt = homework.getUpdatedAt();
@@ -80,6 +84,12 @@ public class StudentHomeworkResponse {
 
     public String getFileUrl() { return fileUrl; }
     public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
+
+    public String getAudioFileName() { return audioFileName; }
+    public void setAudioFileName(String audioFileName) { this.audioFileName = audioFileName; }
+
+    public String getAudioFileUrl() { return audioFileUrl; }
+    public void setAudioFileUrl(String audioFileUrl) { this.audioFileUrl = audioFileUrl; }
 
     public Long getTeacherId() { return teacherId; }
     public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }

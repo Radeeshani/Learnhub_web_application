@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,11 @@ import {
   BookOpenIcon,
   UserGroupIcon,
   PaperClipIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  MicrophoneIcon,
+  StopIcon,
+  PlayIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 
 const CreateHomework = () => {
@@ -23,6 +27,11 @@ const CreateHomework = () => {
     dueDate: ''
   });
   const [file, setFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -31,6 +40,7 @@ const CreateHomework = () => {
   const [fetchingClasses, setFetchingClasses] = useState(true);
   const navigate = useNavigate();
   const { token, user } = useAuth();
+  const audioRef = useRef(null);
 
   const subjects = [
     'Mathematics',
@@ -42,6 +52,64 @@ const CreateHomework = () => {
     'Music',
     'Physical Education'
   ];
+
+  // Audio recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        
+        // Create a File object from the blob
+        const audioFile = new File([blob], 'homework_audio.wav', { type: 'audio/wav' });
+        setAudioFile(audioFile);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setError('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const playAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  const deleteAudio = () => {
+    setAudioBlob(null);
+    setAudioUrl('');
+    setAudioFile(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
 
   // Fetch teacher's assigned classes
   useEffect(() => {
@@ -134,6 +202,10 @@ const CreateHomework = () => {
         formPayload.append('file', file);
       }
       
+      if (audioFile) {
+        formPayload.append('audioFile', audioFile);
+      }
+      
       // Convert date string to ISO format
       const dueDate = new Date(formData.dueDate).toISOString();
       
@@ -145,7 +217,8 @@ const CreateHomework = () => {
         grade: formData.grade,
         classGrade: formData.classGrade,
         classId: formData.classId,
-        dueDate: dueDate
+        dueDate: dueDate,
+        hasAudio: !!audioFile
       });
       
       // Append individual fields
@@ -178,6 +251,9 @@ const CreateHomework = () => {
       });
       setFile(null);
       setPreview('');
+      setAudioFile(null);
+      setAudioBlob(null);
+      setAudioUrl('');
       
       // Wait for 1.5 seconds to show success message before navigating
       setTimeout(() => {
@@ -528,10 +604,98 @@ const CreateHomework = () => {
                 </div>
               </motion.div>
 
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 1.5 }}
+              >
+                <label className="block text-sm font-medium text-gray-700">
+                  Audio Instructions (Optional)
+                </label>
+                <div className="mt-1">
+                  <div className="space-y-4">
+                    {/* Recording Controls */}
+                    <div className="flex items-center space-x-4">
+                      {!isRecording ? (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={startRecording}
+                          className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          <MicrophoneIcon className="h-5 w-5 mr-2" />
+                          Start Recording
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={stopRecording}
+                          className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          <StopIcon className="h-5 w-5 mr-2" />
+                          Stop Recording
+                        </motion.button>
+                      )}
+                    </div>
+
+                    {/* Audio Player */}
+                    {audioUrl && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-emerald-800">Audio Preview</h4>
+                          <button
+                            type="button"
+                            onClick={deleteAudio}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                        
+                        <audio ref={audioRef} src={audioUrl} className="w-full" controls />
+                        
+                        <div className="mt-3 flex items-center space-x-3">
+                          <button
+                            type="button"
+                            onClick={playAudio}
+                            className="flex items-center px-3 py-1 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors text-sm"
+                          >
+                            <PlayIcon className="h-4 w-4 mr-1" />
+                            Play
+                          </button>
+                          <span className="text-sm text-emerald-600">
+                            {audioFile ? `File: ${audioFile.name}` : 'Audio recorded'}
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Recording Status */}
+                    {isRecording && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center text-red-600 text-sm"
+                      >
+                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        Recording in progress...
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+
               <motion.button
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.5 }}
+                transition={{ duration: 0.6, delay: 1.6 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 type="submit"

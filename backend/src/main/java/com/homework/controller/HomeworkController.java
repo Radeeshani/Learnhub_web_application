@@ -204,6 +204,7 @@ public class HomeworkController {
             @RequestParam(value = "classId", required = true) Long classId,
             @RequestParam(value = "dueDate", required = true) String dueDate,
             @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "audioFile", required = false) MultipartFile audioFile,
             @RequestHeader("Authorization") String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -256,7 +257,7 @@ public class HomeworkController {
             }
             homeworkRequest.setDueDate(dueDateTime);
             
-            Homework homework = homeworkService.createHomework(homeworkRequest, file, teacherEmail);
+            Homework homework = homeworkService.createHomework(homeworkRequest, file, audioFile, teacherEmail);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Homework created successfully");
@@ -408,7 +409,10 @@ public class HomeworkController {
             Homework homework = homeworkService.getHomework(id);
             logger.debug("Found homework: {}", homework != null);
             
-            return ResponseEntity.ok(homework);
+            // Convert to DTO to avoid lazy loading issues
+            HomeworkResponse homeworkResponse = new HomeworkResponse(homework);
+            
+            return ResponseEntity.ok(homeworkResponse);
         } catch (Exception e) {
             logger.error("Failed to fetch homework by ID", e);
             Map<String, String> error = new HashMap<>();
@@ -428,6 +432,7 @@ public class HomeworkController {
             @RequestParam(value = "classId", required = true) Long classId,
             @RequestParam(value = "dueDate", required = true) String dueDate,
             @RequestParam(required = false) MultipartFile file,
+            @RequestParam(value = "audioFile", required = false) MultipartFile audioFile,
             @RequestHeader("Authorization") String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -473,7 +478,7 @@ public class HomeworkController {
             }
             homeworkRequest.setDueDate(dueDateTime);
             
-            Homework homework = homeworkService.updateHomework(id, homeworkRequest, file, teacherEmail);
+            Homework homework = homeworkService.updateHomework(id, homeworkRequest, file, audioFile, teacherEmail);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Homework updated successfully");

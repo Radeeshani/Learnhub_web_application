@@ -26,6 +26,9 @@ public class HomeworkRequest {
     @NotNull(message = "Due date is required")
     private LocalDateTime dueDate;
     
+    private String audioFileName;
+    private String audioFileUrl;
+    
     // Getters and Setters
     
     public String getTitle() {
@@ -82,5 +85,21 @@ public class HomeworkRequest {
     
     public void setDueDate(LocalDateTime dueDate) {
         this.dueDate = dueDate;
+    }
+    
+    public String getAudioFileName() {
+        return audioFileName;
+    }
+    
+    public void setAudioFileName(String audioFileName) {
+        this.audioFileName = audioFileName;
+    }
+    
+    public String getAudioFileUrl() {
+        return audioFileUrl;
+    }
+    
+    public void setAudioFileUrl(String audioFileUrl) {
+        this.audioFileUrl = audioFileUrl;
     }
 } 

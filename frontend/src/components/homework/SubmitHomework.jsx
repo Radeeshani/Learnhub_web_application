@@ -97,6 +97,13 @@ const SubmitHomework = () => {
             title: hw.title
           });
         }
+        if (hw.audioFileName) {
+          console.log(`Homework ${hw.id} has audio:`, {
+            audioFileName: hw.audioFileName,
+            audioFileUrl: hw.audioFileUrl,
+            title: hw.title
+          });
+        }
       });
       
       setHomeworks(homeworksWithSubmissions);
@@ -745,6 +752,70 @@ const SubmitHomework = () => {
                         </p>
                       )}
 
+                      {/* Audio Instructions */}
+                      {homework.audioFileName && (
+                        <div className="mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-500 font-medium">Audio Instructions</p>
+                              <div className="mt-2">
+                                <audio 
+                                  controls 
+                                  className="w-full h-10 rounded-lg"
+                                  style={{ 
+                                    '--plyr-color-main': '#10b981',
+                                    '--plyr-audio-controls-background': '#f0fdf4',
+                                    '--plyr-audio-control-color': '#059669'
+                                  }}
+                                >
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/wav" />
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/mpeg" />
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/ogg" />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <p className="text-xs text-gray-500">
+                                  {homework.audioFileName.replace(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_/, '')}
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    try {
+                                      const audioUrl = `/api/v1/files/download/homework/${homework.audioFileName}`;
+                                      
+                                      // Create a temporary link element to trigger download
+                                      const link = document.createElement('a');
+                                      link.href = audioUrl;
+                                      // Backend will automatically set .mp3 extension for WAV files
+                                      link.download = homework.audioFileName || `audio_instructions_${homework.id}`;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      
+                                      console.log('Downloading audio instructions:', audioUrl);
+                                    } catch (error) {
+                                      console.error('Error downloading audio:', error);
+                                      alert('Error downloading audio. Please try again.');
+                                    }
+                                  }}
+                                  className="flex items-center space-x-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors text-xs font-medium"
+                                >
+                                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  <span>Download</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Homework Details */}
                       <div className="space-y-2 mb-4">
                         {homework.dueDate && (
@@ -781,52 +852,102 @@ const SubmitHomework = () => {
                                 </span>
                               </div>
                             </div>
-                            <button
-                              onClick={() => {
-                                try {
-                                  console.log('Attachment clicked for homework:', {
-                                    id: homework.id,
-                                    title: homework.title,
-                                    fileUrl: homework.fileUrl,
-                                    fileName: homework.fileName
-                                  });
-                                  
-                                  if (!homework.fileUrl) {
-                                    console.error('No file URL provided');
-                                    return;
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  try {
+                                    console.log('Attachment clicked for homework:', {
+                                      id: homework.id,
+                                      title: homework.title,
+                                      fileUrl: homework.fileUrl,
+                                      fileName: homework.fileName
+                                    });
+                                    
+                                    if (!homework.fileUrl) {
+                                      console.error('No file URL provided');
+                                      return;
+                                    }
+                                    
+                                    // Handle different file URL formats
+                                    let fullUrl;
+                                    if (homework.fileUrl.startsWith('http')) {
+                                      // External URL
+                                      fullUrl = homework.fileUrl;
+                                    } else if (homework.fileUrl.startsWith('/uploads/')) {
+                                      // Backend uploads path - use new v1/files endpoint
+                                      const fileName = homework.fileUrl.split('/').pop();
+                                      fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                                    } else if (homework.fileUrl.startsWith('/api/uploads/')) {
+                                      // Already has /api prefix - convert to new endpoint
+                                      const fileName = homework.fileUrl.split('/').pop();
+                                      fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                                    } else {
+                                      // Assume it's a filename, construct the full path
+                                      fullUrl = `/api/v1/files/download/homework/${homework.fileUrl}`;
+                                    }
+                                    
+                                    console.log('Constructed full URL:', fullUrl);
+                                    console.log('Opening homework attachment:', fullUrl);
+                                    window.open(fullUrl, '_blank');
+                                  } catch (error) {
+                                    console.error('Error opening homework attachment:', error);
+                                    alert('Error opening attachment. Please try again.');
                                   }
-                                  
-                                  // Handle different file URL formats
-                                  let fullUrl;
-                                  if (homework.fileUrl.startsWith('http')) {
-                                    // External URL
-                                    fullUrl = homework.fileUrl;
-                                  } else if (homework.fileUrl.startsWith('/uploads/')) {
-                                    // Backend uploads path - use new v1/files endpoint
-                                    const fileName = homework.fileUrl.split('/').pop();
-                                    fullUrl = `/api/v1/files/download/homework/${fileName}`;
-                                  } else if (homework.fileUrl.startsWith('/api/uploads/')) {
-                                    // Already has /api prefix - convert to new endpoint
-                                    const fileName = homework.fileUrl.split('/').pop();
-                                    fullUrl = `/api/v1/files/download/homework/${fileName}`;
-                                  } else {
-                                    // Assume it's a filename, construct the full path
-                                    fullUrl = `/api/v1/files/download/homework/${homework.fileUrl}`;
+                                }}
+                                className="flex items-center space-x-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors font-medium text-sm"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                                <span>View</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => {
+                                  try {
+                                    if (!homework.fileUrl) {
+                                      console.error('No file URL provided');
+                                      return;
+                                    }
+                                    
+                                    // Handle different file URL formats
+                                    let fullUrl;
+                                    if (homework.fileUrl.startsWith('http')) {
+                                      // External URL
+                                      fullUrl = homework.fileUrl;
+                                    } else if (homework.fileUrl.startsWith('/uploads/')) {
+                                      // Backend uploads path - use new v1/files endpoint
+                                      const fileName = homework.fileUrl.split('/').pop();
+                                      fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                                    } else if (homework.fileUrl.startsWith('/api/uploads/')) {
+                                      // Already has /api prefix - convert to new endpoint
+                                      const fileName = homework.fileUrl.split('/').pop();
+                                      fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                                    } else {
+                                      // Assume it's a filename, construct the full path
+                                      fullUrl = `/api/v1/files/download/homework/${homework.fileUrl}`;
+                                    }
+                                    
+                                    // Create a temporary link element to trigger download
+                                    const link = document.createElement('a');
+                                    link.href = fullUrl;
+                                    link.download = homework.fileName || `homework_attachment_${homework.id}`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    
+                                    console.log('Downloading attachment:', fullUrl);
+                                  } catch (error) {
+                                    console.error('Error downloading attachment:', error);
+                                    alert('Error downloading attachment. Please try again.');
                                   }
-                                  
-                                  console.log('Constructed full URL:', fullUrl);
-                                  console.log('Opening homework attachment:', fullUrl);
-                                  window.open(fullUrl, '_blank');
-                                } catch (error) {
-                                  console.error('Error opening homework attachment:', error);
-                                  alert('Error opening attachment. Please try again.');
-                                }
-                              }}
-                              className="flex items-center space-x-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors font-medium text-sm"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                              <span>View</span>
-                            </button>
+                                }}
+                                className="flex items-center space-x-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors font-medium text-sm"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Download</span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -955,53 +1076,169 @@ const SubmitHomework = () => {
                         Review this material before submitting your work
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try {
-                          console.log('Modal attachment clicked for homework:', {
-                            id: selectedHomework.id,
-                            title: selectedHomework.title,
-                            fileUrl: selectedHomework.fileUrl,
-                            fileName: selectedHomework.fileName
-                          });
-                          
-                          if (!selectedHomework.fileUrl) {
-                            console.error('No file URL provided');
-                            return;
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            console.log('Modal attachment clicked for homework:', {
+                              id: selectedHomework.id,
+                              title: selectedHomework.title,
+                              fileUrl: selectedHomework.fileUrl,
+                              fileName: selectedHomework.fileName
+                            });
+                            
+                            if (!selectedHomework.fileUrl) {
+                              console.error('No file URL provided');
+                              return;
+                            }
+                            
+                            // Handle different file URL formats
+                            let fullUrl;
+                            if (selectedHomework.fileUrl.startsWith('http')) {
+                              // External URL
+                              fullUrl = selectedHomework.fileUrl;
+                            } else if (selectedHomework.fileUrl.startsWith('/uploads/')) {
+                              // Backend uploads path - use new v1/files endpoint
+                              const fileName = selectedHomework.fileUrl.split('/').pop();
+                              fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                            } else if (selectedHomework.fileUrl.startsWith('/api/uploads/')) {
+                              // Already has /api prefix - convert to new endpoint
+                              const fileName = selectedHomework.fileUrl.split('/').pop();
+                              fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                            } else {
+                              // Assume it's a filename, construct the full path
+                              fullUrl = `/api/v1/files/download/homework/${selectedHomework.fileUrl}`;
+                            }
+                            
+                            console.log('Modal constructed full URL:', fullUrl);
+                            console.log('Opening homework attachment from modal:', fullUrl);
+                            window.open(fullUrl, '_blank');
+                          } catch (error) {
+                            console.error('Error opening homework attachment:', error);
+                            alert('Error opening attachment. Please try again.');
                           }
-                          
-                          // Handle different file URL formats
-                          let fullUrl;
-                          if (selectedHomework.fileUrl.startsWith('http')) {
-                            // External URL
-                            fullUrl = selectedHomework.fileUrl;
-                          } else if (selectedHomework.fileUrl.startsWith('/uploads/')) {
-                            // Backend uploads path - use new v1/files endpoint
-                            const fileName = selectedHomework.fileUrl.split('/').pop();
-                            fullUrl = `/api/v1/files/download/homework/${fileName}`;
-                          } else if (selectedHomework.fileUrl.startsWith('/api/uploads/')) {
-                            // Already has /api prefix - convert to new endpoint
-                            const fileName = selectedHomework.fileUrl.split('/').pop();
-                            fullUrl = `/api/v1/files/download/homework/${fileName}`;
-                          } else {
-                            // Assume it's a filename, construct the full path
-                            fullUrl = `/api/v1/files/download/homework/${selectedHomework.fileUrl}`;
+                        }}
+                        className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                        <span>View</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            if (!selectedHomework.fileUrl) {
+                              console.error('No file URL provided');
+                              return;
+                            }
+                            
+                            // Handle different file URL formats
+                            let fullUrl;
+                            if (selectedHomework.fileUrl.startsWith('http')) {
+                              // External URL
+                              fullUrl = selectedHomework.fileUrl;
+                            } else if (selectedHomework.fileUrl.startsWith('/uploads/')) {
+                              // Backend uploads path - use new v1/files endpoint
+                              const fileName = selectedHomework.fileUrl.split('/').pop();
+                              fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                            } else if (selectedHomework.fileUrl.startsWith('/api/uploads/')) {
+                              // Already has /api prefix - convert to new endpoint
+                              const fileName = selectedHomework.fileUrl.split('/').pop();
+                              fullUrl = `/api/v1/files/download/homework/${fileName}`;
+                            } else {
+                              // Assume it's a filename, construct the full path
+                              fullUrl = `/api/v1/files/download/homework/${selectedHomework.fileUrl}`;
+                            }
+                            
+                            // Create a temporary link element to trigger download
+                            const link = document.createElement('a');
+                            link.href = fullUrl;
+                            link.download = selectedHomework.fileName || `homework_attachment_${selectedHomework.id}`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            console.log('Downloading attachment from modal:', fullUrl);
+                          } catch (error) {
+                            console.error('Error downloading attachment:', error);
+                            alert('Error downloading attachment. Please try again.');
                           }
-                          
-                          console.log('Modal constructed full URL:', fullUrl);
-                          console.log('Opening homework attachment from modal:', fullUrl);
-                          window.open(fullUrl, '_blank');
-                        } catch (error) {
-                          console.error('Error opening homework attachment:', error);
-                          alert('Error opening attachment. Please try again.');
-                        }
-                      }}
-                      className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                      <span>View Material</span>
-                    </button>
+                        }}
+                        className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Download</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Instructions in Modal Header */}
+              {selectedHomework.audioFileName && (
+                <div className="mt-2 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-emerald-200 rounded-lg flex items-center justify-center">
+                      <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-emerald-800 font-medium">🎤 Voice Instructions</p>
+                      <div className="mt-2">
+                        <audio 
+                          controls 
+                          className="w-full h-10 rounded-lg"
+                          style={{ 
+                            '--plyr-color-main': '#10b981',
+                            '--plyr-audio-controls-background': '#f0fdf4',
+                            '--plyr-audio-control-color': '#059669'
+                          }}
+                        >
+                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/wav" />
+                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/mpeg" />
+                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/ogg" />
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-emerald-600">
+                          Listen to teacher's voice instructions
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              const audioUrl = `/api/v1/files/download/homework/${selectedHomework.audioFileName}`;
+                              
+                                                                    // Create a temporary link element to trigger download
+                                      const link = document.createElement('a');
+                                      link.href = audioUrl;
+                                      // Backend will automatically set .mp3 extension for WAV files
+                                      link.download = selectedHomework.audioFileName || `audio_instructions_${selectedHomework.id}`;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                              
+                              console.log('Downloading audio instructions from modal:', audioUrl);
+                            } catch (error) {
+                              console.error('Error downloading audio:', error);
+                              alert('Error downloading audio. Please try again.');
+                            }
+                          }}
+                          className="flex items-center space-x-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-xs font-medium shadow-sm"
+                        >
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

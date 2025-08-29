@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import {
   FiBook, FiCalendar, FiUser, FiEye, FiEdit3, FiTrash2,
   FiPlus, FiClock, FiCheckCircle, FiXCircle, FiFileText, FiUsers,
@@ -12,6 +13,7 @@ import {
 const ViewHomeworks = () => {
   const { user, token } = useAuth();
   const { showSuccess, showError } = useToast();
+  const navigate = useNavigate();
   
   // State
   const [homeworks, setHomeworks] = useState([]);
@@ -254,7 +256,7 @@ const ViewHomeworks = () => {
   };
 
   const handleEditHomework = (homework) => {
-    window.location.href = `/homework/edit/${homework.id}`;
+    navigate(`/homework/edit/${homework.id}`, { state: { homework } });
   };
 
   const handleDeleteHomework = async (homeworkId) => {
@@ -331,7 +333,7 @@ const ViewHomeworks = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.href = '/homework/create'}
+                onClick={() => navigate('/homework/create')}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg"
               >
                 <FiPlus className="h-5 w-5 inline mr-2" />
@@ -445,6 +447,43 @@ const ViewHomeworks = () => {
                         </div>
                       )}
 
+                      {/* Audio Instructions */}
+                      {homework.audioFileUrl && (
+                        <div className="mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-500 font-medium">Audio Instructions</p>
+                              <div className="mt-2">
+                                <audio 
+                                  controls 
+                                  className="w-full h-10 rounded-lg"
+                                  style={{ 
+                                    '--plyr-color-main': '#10b981',
+                                    '--plyr-audio-controls-background': '#f0fdf4',
+                                    '--plyr-audio-control-color': '#059669'
+                                  }}
+                                >
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/wav" />
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/mpeg" />
+                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/ogg" />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                              {homework.audioFileName && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {homework.audioFileName.replace(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_/, '')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Created Date */}
                       <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
                         Created: {formatDate(homework.createdAt)}
@@ -501,7 +540,7 @@ const ViewHomeworks = () => {
                 Start creating homework assignments for your students.
               </p>
               <button
-                onClick={() => window.location.href = '/homework/create'}
+                onClick={() => navigate('/homework/create')}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg"
               >
                 <FiPlus className="h-5 w-5 inline mr-2" />

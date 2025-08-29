@@ -40,6 +40,12 @@ public class Homework {
     @Column(name = "file_url")
     private String fileUrl;
     
+    @Column(name = "audio_file_name")
+    private String audioFileName;
+    
+    @Column(name = "audio_file_url")
+    private String audioFileUrl;
+    
     @Column(name = "teacher_id")
     private Long teacherId;
     
@@ -157,6 +163,22 @@ public class Homework {
     
     public void setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
+    }
+    
+    public String getAudioFileName() {
+        return audioFileName;
+    }
+    
+    public void setAudioFileName(String audioFileName) {
+        this.audioFileName = audioFileName;
+    }
+    
+    public String getAudioFileUrl() {
+        return audioFileUrl;
+    }
+    
+    public void setAudioFileUrl(String audioFileUrl) {
+        this.audioFileUrl = audioFileUrl;
     }
     
     public Long getTeacherId() {
