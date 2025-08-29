@@ -29,14 +29,40 @@ spring:
       max-request-size: 10MB
       location: ${java.io.tmpdir}
   
+  # Email Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:ashfak25321@gmail.com}
+    password: ${EMAIL_PASSWORD:thfn qrst ozqf dvzlthfn qrst ozqf dvzl}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        transport:
+          protocol: smtp
+    default-encoding: UTF-8
+  
   # security:
   #   user:
   #     name: admin
   #     password: admin123
 
 jwt:
-  secret: your-256-bit-secret-key-must-be-32-chars-long
+  secret: 12345678901234567890123456789012
   expiration: 86400000  # 24 hours in milliseconds
+
+# Email Templates Configuration
+email:
+  from: ${EMAIL_FROM:ashfak25321@gmail.com}
+  templates:
+    new-homework: "New Homework Assignment: {title}"
+    due-soon: "Homework Due Soon: {title}"
+    overdue: "Homework Overdue: {title}"
+    graded: "Homework Graded: {title}"
+    submission: "Homework Submission Received: {title}"
 
 logging:
   level:

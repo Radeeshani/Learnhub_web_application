@@ -84,7 +84,7 @@ const Dashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900 font-poppins">
-                  EduBuddy
+                  LearnHub
                 </h1>
               </div>
             </div>
@@ -137,7 +137,7 @@ const Dashboard = () => {
                   Welcome back, {user?.firstName}! 👋
                 </h2>
                 <p className="mt-2 text-gray-600">
-                  {hasRole('ADMIN') && 'Manage EduBuddy platform'}
+                  {hasRole('ADMIN') && 'Manage LearnHub platform'}
                   {hasRole('TEACHER') && 'Ready to inspire and educate your students'}
                   {hasRole('STUDENT') && 'Time to learn and grow'}
                   {hasRole('PARENT') && "Keep track of your child's educational journey"}

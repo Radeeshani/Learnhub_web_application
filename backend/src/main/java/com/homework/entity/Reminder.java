@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
+import com.homework.entity.Notification.NotificationPriority;
 
 @Entity
 @Table(name = "reminders")
@@ -49,6 +50,10 @@ public class Reminder {
     @Column(name = "is_read", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isRead;
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationPriority priority;
+    
     @Column(nullable = false)
     private LocalDateTime createdAt;
     
@@ -61,7 +66,8 @@ public class Reminder {
         DUE_SOON_6H,       // 6 hours before due date
         DUE_SOON_1H,       // 1 hour before due date
         OVERDUE,           // After due date
-        CUSTOM             // Custom reminder time
+        CUSTOM,            // Custom reminder time
+        SMART              // Smart consolidated reminder
     }
     
     public enum ReminderStatus {

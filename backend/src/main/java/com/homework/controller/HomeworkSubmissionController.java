@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api/submissions")
+@RequestMapping("/submissions")
 public class HomeworkSubmissionController {
     
     private static final Logger logger = LoggerFactory.getLogger(HomeworkSubmissionController.class);

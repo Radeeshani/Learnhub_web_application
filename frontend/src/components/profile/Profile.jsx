@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { FiUser, FiMail, FiPhone, FiBook, FiAward, FiCamera, FiSave, FiEdit3, FiX } from 'react-icons/fi';
+import {
+  UserIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  AcademicCapIcon,
+  TrophyIcon,
+  CameraIcon,
+  CheckIcon,
+  PencilIcon,
+  ArrowRightOnRectangleIcon,
+  SparklesIcon,
+  HeartIcon,
+  StarIcon
+} from '@heroicons/react/24/outline';
+import axios from 'axios';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -37,7 +52,9 @@ const Profile = () => {
       
       // Set profile picture preview if exists
       if (user.profilePicture) {
-        setProfilePicturePreview(`http://localhost:8080/api/profile-pictures/${user.profilePicture}`);
+        const pictureUrl = `/api/profile-pictures/${user.profilePicture}`;
+        console.log('Setting profile picture URL:', pictureUrl);
+        setProfilePicturePreview(pictureUrl);
       }
     }
   }, [user]);
@@ -119,13 +136,14 @@ const Profile = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8080/api/profile-pictures/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('/api/profile-pictures/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (response.ok) {
-        const result = await response.text();
+      if (response.status === 200) {
+        const result = response.data;
         // Extract filename from response
         const filename = result.replace('Profile picture uploaded successfully: ', '');
         return filename;
@@ -155,25 +173,23 @@ const Profile = () => {
 
       // Update user profile
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/users/profile', {
-        method: 'PUT',
+      const response = await axios.put('/api/users/profile', {
+        ...formData,
+        profilePicture: profilePictureFilename || user.profilePicture
+      }, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          profilePicture: profilePictureFilename || user.profilePicture
-        })
+        }
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
         // Refresh user data (you might want to implement this in AuthContext)
         window.location.reload(); // Temporary solution
       } else {
-        const errorData = await response.json();
+        const errorData = response.data;
         setError(errorData.message || 'Failed to update profile');
       }
     } catch (error) {
@@ -197,7 +213,7 @@ const Profile = () => {
     // Reset profile picture
     setProfilePicture(null);
     if (user.profilePicture) {
-      setProfilePicturePreview(`http://localhost:8080/api/profile-pictures/${user.profilePicture}`);
+      setProfilePicturePreview(`/api/profile-pictures/${user.profilePicture}`);
     } else {
       setProfilePicturePreview(null);
     }
@@ -226,95 +242,158 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-coral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+          <p className="text-teal-600 font-semibold">Loading your profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+    <div className="min-h-screen w-full bg-gradient-to-br from-teal-50 via-white to-coral-50 py-8 relative">
+      {/* Floating Decorative Elements */}
+      <div className="absolute top-20 left-10 w-16 h-16 bg-gradient-to-r from-teal-400 to-coral-400 rounded-full opacity-20 animate-pulse"></div>
+      <div className="absolute top-40 right-20 w-12 h-12 bg-gradient-to-r from-purple-400 to-yellow-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      <div className="absolute bottom-40 left-20 w-20 h-20 bg-gradient-to-r from-coral-400 to-teal-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute bottom-20 right-10 w-14 h-14 bg-gradient-to-r from-yellow-400 to-purple-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '3s' }}></div>
+      
+      {/* Enhanced Background Pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-50/30 via-white/20 to-coral-50/30 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(20,184,166,0.1),transparent_50%)] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(251,146,60,0.1),transparent_50%)] pointer-events-none"></div>
+      
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl shadow-xl p-8 mb-8"
+          className="card-gradient bg-gradient-to-r from-teal-500 to-coral-500 rounded-3xl shadow-2xl p-8 mb-8 relative overflow-hidden"
         >
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-            <div className="flex space-x-3">
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-colors"
-                >
-                  <FiEdit3 className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </button>
-              ) : (
-                <>
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-teal-600/20 to-coral-600/20"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30">
+                  <UserIcon className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold text-white mb-2">My Profile</h1>
+                  <p className="text-white/90 text-lg">Manage your personal information and settings</p>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                {!isEditing ? (
                   <button
-                    onClick={handleCancel}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-colors"
+                    onClick={() => setIsEditing(true)}
+                    className="btn-primary inline-flex items-center px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform hover:scale-105 border border-white/30"
                   >
-                    <FiX className="w-4 h-4 mr-2" />
-                    Cancel
+                    <PencilIcon className="w-5 h-5 mr-2" />
+                    Edit Profile
                   </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={loading || uploadingPicture}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <FiSave className="w-4 h-4 mr-2" />
-                    {loading || uploadingPicture ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Alerts */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mb-6"
-            >
-              {success}
-            </motion.div>
-          )}
-
-          {/* Profile Picture Section */}
-          <div className="flex flex-col items-center space-y-4 mb-8">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-lg">
-                {profilePicturePreview ? (
-                  <img
-                    src={profilePicturePreview}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
                 ) : (
-                  <FiUser className="w-16 h-16 text-gray-400 m-8" />
+                  <>
+                    <button
+                      onClick={handleCancel}
+                      className="btn-secondary inline-flex items-center px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform hover:scale-105 border border-white/30"
+                    >
+                      <FiX className="w-5 h-5 mr-2" />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={loading || uploadingPicture}
+                      className="btn-primary inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    >
+                      <CheckIcon className="w-5 h-5 mr-2" />
+                      {loading || uploadingPicture ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </>
                 )}
               </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Enhanced Alerts */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 text-red-700 px-6 py-4 rounded-2xl text-sm mb-6 shadow-lg"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <FiX className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="font-semibold">{error}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-gradient-to-r from-green-50 to-emerald-100 border-2 border-green-200 text-green-700 px-6 py-4 rounded-2xl text-sm mb-6 shadow-lg"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckIcon className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="font-semibold">{success}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Enhanced Profile Picture Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8 w-full"
+        >
+          <div className="flex flex-col items-center space-y-6 mb-8">
+            <div className="relative group">
+              <div className="w-40 h-40 rounded-full overflow-hidden bg-gradient-to-r from-teal-100 to-coral-100 border-4 border-white shadow-2xl transform group-hover:scale-105 transition-transform duration-300 relative">
+                                  {profilePicturePreview ? (
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onLoad={(e) => {
+                        console.log('Profile picture loaded successfully:', e.target.src);
+                      }}
+                      onError={(e) => {
+                        console.error('Profile picture failed to load:', e.target.src);
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-r from-teal-200 to-coral-200 ${profilePicturePreview ? 'hidden' : 'flex'}`}>
+                  <UserIcon className="w-20 h-20 text-teal-600" />
+                </div>
+              </div>
               {isEditing && (
-                <label className="absolute bottom-0 right-0 bg-sky-500 text-white rounded-full p-3 cursor-pointer hover:bg-sky-600 transition-colors shadow-lg">
-                  <FiCamera className="w-5 h-5" />
+                <label className="absolute bottom-2 right-2 bg-gradient-to-r from-teal-500 to-coral-500 text-white rounded-full p-4 cursor-pointer hover:from-teal-600 hover:to-coral-600 transition-all duration-300 shadow-xl transform hover:scale-110 border-2 border-white">
+                  <CameraIcon className="w-6 h-6" />
                   <input
                     type="file"
                     accept="image/*"
@@ -323,23 +402,47 @@ const Profile = () => {
                   />
                 </label>
               )}
+              
+              {/* Role Badge */}
+              <div className="absolute -top-2 -left-2 bg-gradient-to-r from-purple-500 to-yellow-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg border-2 border-white">
+                {getRoleDisplay()}
+              </div>
             </div>
+            
             {isEditing && (
-              <p className="text-xs text-gray-500 text-center">
-                Click the camera icon to upload a new profile picture<br />
-                Supported formats: JPG, PNG, GIF, WebP (max 5MB)
-              </p>
+              <div className="text-center bg-gradient-to-r from-teal-50 to-coral-50 px-6 py-4 rounded-2xl border border-teal-200">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <CameraIcon className="w-5 h-5 text-teal-600" />
+                  <span className="text-teal-800 font-semibold">Upload New Picture</span>
+                </div>
+                <p className="text-sm text-teal-700">
+                  Click the camera icon to upload a new profile picture<br />
+                  Supported formats: JPG, PNG, GIF, WebP (max 5MB)
+                </p>
+              </div>
             )}
           </div>
+        </motion.div>
 
-          {/* Profile Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Enhanced Profile Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-teal-100 to-coral-100 rounded-xl flex items-center justify-center">
+                  <UserIcon className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Basic Information</h3>
+              </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   First Name
                 </label>
                 <input
@@ -348,14 +451,14 @@ const Profile = () => {
                   value={formData.firstName}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 ${
+                    isEditing ? 'border-teal-300 bg-white hover:border-teal-400' : 'border-gray-200 bg-gray-50'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Last Name
                 </label>
                 <input
@@ -364,14 +467,14 @@ const Profile = () => {
                   value={formData.lastName}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 ${
+                    isEditing ? 'border-teal-300 bg-white hover:border-teal-400' : 'border-gray-200 bg-gray-50'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email
                 </label>
                 <input
@@ -380,14 +483,14 @@ const Profile = () => {
                   value={formData.email}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-transparent transition-all duration-300 ${
+                    isEditing ? 'border-teal-300 bg-white hover:border-teal-400' : 'border-gray-200 bg-gray-50'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone Number
                 </label>
                 <input
@@ -396,39 +499,44 @@ const Profile = () => {
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 ${
+                    isEditing ? 'border-teal-300 bg-white hover:border-teal-400' : 'border-gray-200 bg-gray-50'
                   }`}
                 />
               </div>
             </div>
 
             {/* Role-specific Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Role Information</h3>
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-yellow-100 rounded-xl flex items-center justify-center">
+                  <TrophyIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Role Information</h3>
+              </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
-                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900">
+                <div className="px-4 py-3 bg-gradient-to-r from-purple-50 to-yellow-50 border-2 border-purple-200 rounded-xl text-purple-800 font-semibold">
                   {getRoleDisplay()}
                 </div>
               </div>
 
                             {user.role === 'STUDENT' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Grade
                   </label>
                   {isEditing ? (
                     <div className="relative">
-                      <FiBook className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <AcademicCapIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500" />
                       <select
                         name="classGrade"
                         value={formData.classGrade}
                         onChange={handleChange}
-                        className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                        className="pl-12 pr-10 py-3 w-full border-2 border-teal-300 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 appearance-none bg-white hover:border-teal-400 transition-all duration-300"
                       >
                         <option value="">Select Grade</option>
                         <option value="1st Grade">Grade 01</option>
@@ -445,7 +553,7 @@ const Profile = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900">
+                    <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-coral-50 border-2 border-teal-200 rounded-xl text-teal-800 font-semibold">
                       {formData.classGrade || 'Not specified'}
                     </div>
                   )}
@@ -455,17 +563,17 @@ const Profile = () => {
               {user.role === 'TEACHER' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Grade Level
                     </label>
                     {isEditing ? (
                       <div className="relative">
-                        <FiBook className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <AcademicCapIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500" />
                         <select
                           name="classGrade"
                           value={formData.classGrade}
                           onChange={handleChange}
-                          className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                          className="pl-12 pr-10 py-3 w-full border-2 border-teal-300 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 appearance-none bg-white hover:border-teal-400 transition-all duration-300"
                         >
                           <option value="">Select Grade</option>
                           <option value="1st Grade">Grade 01</option>
@@ -482,23 +590,23 @@ const Profile = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900">
+                      <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-coral-50 border-2 border-teal-200 rounded-xl text-teal-800 font-semibold">
                         {formData.classGrade || 'Not specified'}
                       </div>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Subject Taught
                     </label>
                     {isEditing ? (
                       <div className="relative">
-                        <FiAward className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <StarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-coral-500" />
                         <select
                           name="subjectTaught"
                           value={formData.subjectTaught}
                           onChange={handleChange}
-                          className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white"
+                          className="pl-12 pr-10 py-3 w-full border-2 border-coral-300 rounded-xl focus:ring-4 focus:ring-coral-200 focus:border-coral-500 appearance-none bg-white hover:border-coral-400 transition-all duration-300"
                         >
                           <option value="">Select Subject</option>
                           {formData.classGrade === '1st Grade' && (
@@ -548,7 +656,7 @@ const Profile = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900">
+                      <div className="px-4 py-3 bg-gradient-to-r from-coral-50 to-pink-50 border-2 border-coral-200 rounded-xl text-coral-800 font-semibold">
                         {formData.subjectTaught || 'Not specified'}
                       </div>
                     )}
@@ -559,22 +667,33 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        {/* Account Actions */}
+        {/* Enhanced Account Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-3xl shadow-xl p-8"
+          className="card-gradient bg-gradient-to-r from-red-500 to-pink-500 rounded-3xl shadow-2xl p-8 relative overflow-hidden"
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
-          <div className="space-y-3">
-            <button
-              onClick={() => logout()}
-              className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-            >
-              <FiX className="w-4 h-4 mr-2" />
-              Logout
-            </button>
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-pink-600/20"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30">
+                <ArrowRightOnRectangleIcon className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Account Actions</h3>
+            </div>
+            <div className="space-y-4">
+              <button
+                onClick={() => logout()}
+                className="w-full flex items-center justify-center px-6 py-4 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-2xl hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform hover:scale-105 border-2 border-white/30 shadow-lg"
+              >
+                <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+                Logout
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

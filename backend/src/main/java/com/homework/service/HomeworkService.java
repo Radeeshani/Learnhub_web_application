@@ -1,10 +1,20 @@
 package com.homework.service;
 
 import com.homework.dto.HomeworkRequest;
+import com.homework.dto.HomeworkResponse;
+import com.homework.dto.StudentHomeworkResponse;
 import com.homework.entity.Homework;
 import com.homework.entity.User;
+import com.homework.entity.Class;
+import com.homework.entity.Reminder;
+import com.homework.entity.HomeworkSubmission;
+import com.homework.entity.Notification;
 import com.homework.repository.HomeworkRepository;
 import com.homework.repository.UserRepository;
+import com.homework.repository.ClassRepository;
+import com.homework.repository.ReminderRepository;
+import com.homework.repository.HomeworkSubmissionRepository;
+import com.homework.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -19,6 +29,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 @Service
 public class HomeworkService {
@@ -34,6 +47,21 @@ public class HomeworkService {
     
     @Autowired
     private ReminderService reminderService;
+    
+    @Autowired
+    private ClassEnrollmentService classEnrollmentService;
+    
+    @Autowired
+    private ClassRepository classRepository;
+    
+    @Autowired
+    private ReminderRepository reminderRepository;
+    
+    @Autowired
+    private HomeworkSubmissionRepository homeworkSubmissionRepository;
+    
+    @Autowired
+    private NotificationRepository notificationRepository;
     
     private final Path uploadPath = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
     
@@ -64,18 +92,34 @@ public class HomeworkService {
         homework.setDescription(request.getDescription());
         homework.setSubject(request.getSubject());
         homework.setClassGrade(request.getClassGrade());
+        homework.setGrade(request.getGrade());
+        homework.setClassId(request.getClassId());
         homework.setDueDate(request.getDueDate());
         homework.setTeacherId(teacher.getId());
         homework.setFileName(fileName);
         homework.setFileUrl(fileUrl);
+        
+        // Create homework-class relationship
+        if (request.getClassId() != null) {
+            try {
+                Class assignedClass = classRepository.findById(request.getClassId())
+                        .orElseThrow(() -> new Exception("Class not found"));
+                
+                // Add the class to the homework's assigned classes
+                homework.getAssignedClasses().add(assignedClass);
+            } catch (Exception e) {
+                // Log error but don't fail homework creation
+                System.err.println("Warning: Could not link homework to class: " + e.getMessage());
+            }
+        }
         
         Homework savedHomework = homeworkRepository.save(homework);
         
         // Create notification for students about new homework
         notificationService.createNewHomeworkNotification(savedHomework);
         
-        // Create reminders for all students in the grade
-        reminderService.createHomeworkReminders(savedHomework);
+        // Create smart reminders for all students in the grade
+        reminderService.createSmartHomeworkReminder(savedHomework);
         
         return savedHomework;
     }
@@ -110,7 +154,24 @@ public class HomeworkService {
         homework.setDescription(request.getDescription());
         homework.setSubject(request.getSubject());
         homework.setClassGrade(request.getClassGrade());
+        homework.setGrade(request.getGrade());
+        homework.setClassId(request.getClassId());
         homework.setDueDate(request.getDueDate());
+        
+        // Update homework-class relationship
+        if (request.getClassId() != null) {
+            try {
+                Class assignedClass = classRepository.findById(request.getClassId())
+                        .orElseThrow(() -> new Exception("Class not found"));
+                
+                // Clear existing assignments and add the new one
+                homework.getAssignedClasses().clear();
+                homework.getAssignedClasses().add(assignedClass);
+            } catch (Exception e) {
+                // Log error but don't fail homework update
+                System.err.println("Warning: Could not link homework to class: " + e.getMessage());
+            }
+        }
         
         return homeworkRepository.save(homework);
     }
@@ -126,6 +187,24 @@ public class HomeworkService {
             throw new Exception("Not authorized to delete this homework");
         }
         
+        // Delete related reminders first to avoid foreign key constraint violation
+        List<Reminder> relatedReminders = reminderRepository.findByHomeworkId(id);
+        if (!relatedReminders.isEmpty()) {
+            reminderRepository.deleteAll(relatedReminders);
+        }
+        
+        // Delete related homework submissions to avoid foreign key constraint violation
+        List<HomeworkSubmission> relatedSubmissions = homeworkSubmissionRepository.findByHomeworkId(id);
+        if (!relatedSubmissions.isEmpty()) {
+            homeworkSubmissionRepository.deleteAll(relatedSubmissions);
+        }
+        
+        // Delete related notifications to avoid foreign key constraint violation
+        List<Notification> relatedNotifications = notificationRepository.findByHomeworkIdOrderByCreatedAtDesc(id);
+        if (!relatedNotifications.isEmpty()) {
+            notificationRepository.deleteAll(relatedNotifications);
+        }
+        
         // Delete associated file if exists
         if (homework.getFileName() != null) {
             Path filePath = uploadPath.resolve(homework.getFileName());
@@ -135,30 +214,50 @@ public class HomeworkService {
         homeworkRepository.delete(homework);
     }
     
-    public List<Homework> getTeacherHomework(String teacherEmail) throws Exception {
+    public List<HomeworkResponse> getTeacherHomework(String teacherEmail) throws Exception {
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new Exception("Teacher not found"));
         
-        return homeworkRepository.findByTeacherId(teacher.getId());
+        // Fetch homework entities and convert to DTOs to avoid lazy loading issues
+        List<Homework> homeworks = homeworkRepository.findByTeacherId(teacher.getId());
+        return homeworks.stream()
+                .map(HomeworkResponse::new)
+                .collect(Collectors.toList());
     }
     
-    public List<Homework> getStudentHomework(String studentEmail, String subject, String sortBy, String sortOrder) throws Exception {
+    public List<StudentHomeworkResponse> getStudentHomework(String studentEmail, String subject, String sortBy, String sortOrder) throws Exception {
         User student = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new Exception("Student not found"));
         
         Sort sort = createSort(sortBy, sortOrder);
         List<Homework> homeworks;
         
-        if (subject != null && !subject.isEmpty()) {
-            homeworks = homeworkRepository.findByClassGradeAndSubject(student.getClassGrade(), subject, sort);
+        // Get class IDs where the student is enrolled
+        List<Long> enrolledClassIds = classEnrollmentService.getStudentEnrolledClassIds(student.getId());
+        
+        if (enrolledClassIds.isEmpty()) {
+            // Fallback to class_grade approach if no enrolled classes found
+            if (subject != null && !subject.isEmpty()) {
+                homeworks = homeworkRepository.findByClassGradeAndSubject(student.getClassGrade(), subject, sort);
+            } else {
+                homeworks = homeworkRepository.findByClassGrade(student.getClassGrade(), sort);
+            }
         } else {
-            homeworks = homeworkRepository.findByClassGrade(student.getClassGrade(), sort);
+            // Use proper class enrollment filtering
+            if (subject != null && !subject.isEmpty()) {
+                homeworks = homeworkRepository.findByClassIdInAndSubject(enrolledClassIds, subject, sort);
+            } else {
+                homeworks = homeworkRepository.findByClassIdIn(enrolledClassIds, sort);
+            }
         }
         
-        return homeworks;
+        // Convert to DTOs to avoid lazy loading issues
+        return homeworks.stream()
+                .map(StudentHomeworkResponse::new)
+                .collect(Collectors.toList());
     }
     
-    public List<Homework> getParentHomework(String parentEmail, String subject, String sortBy, String sortOrder) throws Exception {
+    public List<StudentHomeworkResponse> getParentHomework(String parentEmail, String subject, String sortBy, String sortOrder) throws Exception {
         User parent = userRepository.findByEmail(parentEmail)
                 .orElseThrow(() -> new Exception("Parent not found"));
         
@@ -191,5 +290,33 @@ public class HomeworkService {
         }
         
         return Sort.by(direction, sortBy);
+    }
+    
+    public Map<String, Object> getStudentHomeworkStatistics(Long studentId) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        try {
+            // Get total homeworks for the student
+            List<Long> enrolledClassIds = classEnrollmentService.getStudentEnrolledClassIds(studentId);
+            List<Homework> totalHomeworks = new ArrayList<>();
+            
+            if (!enrolledClassIds.isEmpty()) {
+                totalHomeworks = homeworkRepository.findByClassIdIn(enrolledClassIds, Sort.by(Sort.Direction.DESC, "dueDate"));
+            }
+            
+            // For now, we'll set basic statistics
+            // In a real implementation, you'd check homework submission status
+            stats.put("totalHomeworks", totalHomeworks.size());
+            stats.put("completedHomeworks", 0); // TODO: Implement submission status checking
+            stats.put("pendingHomeworks", totalHomeworks.size()); // TODO: Implement submission status checking
+            
+        } catch (Exception e) {
+            // Set default values on error
+            stats.put("totalHomeworks", 0);
+            stats.put("completedHomeworks", 0);
+            stats.put("pendingHomeworks", 0);
+        }
+        
+        return stats;
     }
 } 

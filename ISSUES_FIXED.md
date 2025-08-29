@@ -1,4 +1,4 @@
-# Issues Fixed - EduBuddy
+# Issues Fixed - LearnHub
 
 ## Summary of Problems and Solutions
 

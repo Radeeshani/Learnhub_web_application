@@ -9,29 +9,32 @@ import com.homework.service.CalendarService;
 import com.homework.service.ClassService;
 import com.homework.service.HomeworkService;
 import com.homework.dto.HomeworkRequest;
+import com.homework.dto.HomeworkResponse;
+import com.homework.dto.StudentHomeworkResponse;
 import com.homework.dto.HomeworkSubmissionRequest;
 import com.homework.dto.HomeworkSubmissionResponse;
 import com.homework.entity.User;
 import com.homework.service.HomeworkSubmissionService;
 import com.homework.service.UserService;
-import com.homework.entity.Notification;
-import com.homework.service.NotificationService;
+
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
-import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/homework")
@@ -49,8 +52,7 @@ public class HomeworkController {
     @Autowired
     private HomeworkSubmissionService submissionService;
 
-    @Autowired
-    private NotificationService notificationService;
+
     
     @Autowired
     private CalendarService calendarService;
@@ -68,10 +70,15 @@ public class HomeworkController {
     }
 
     @GetMapping("/calendar/events")
-    public ResponseEntity<?> getCalendarEvents() {
+    public ResponseEntity<?> getCalendarEvents(@RequestHeader("Authorization") String authHeader) {
         try {
-            // For now, get events for user ID 1 (first student)
-            List<CalendarEvent> events = calendarService.getUpcomingEvents(1L, 30);
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            List<CalendarEvent> events = calendarService.getUpcomingEvents(userId, 30);
             return ResponseEntity.ok(events);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error retrieving calendar events: " + e.getMessage());
@@ -79,8 +86,18 @@ public class HomeworkController {
     }
 
     @PostMapping("/calendar/events")
-    public ResponseEntity<?> createCalendarEvent(@RequestBody CalendarEventRequest request) {
+    public ResponseEntity<?> createCalendarEvent(@RequestBody CalendarEventRequest request, @RequestHeader("Authorization") String authHeader) {
         try {
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            
+            // Log the request for debugging
+            logger.info("Creating calendar event for user {}: {}", userId, request);
+            
             // Convert request to entity and create event
             CalendarEvent event = new CalendarEvent();
             event.setTitle(request.getTitle());
@@ -89,7 +106,7 @@ public class HomeworkController {
             event.setEndTime(request.getEndTime());
             event.setAllDay(request.isAllDay());
             event.setEventType(request.getEventTypeEnum());
-            event.setUserId(1L); // Temporary user ID
+            event.setUserId(userId);
             event.setHomeworkId(request.getHomeworkId());
             event.setClassId(request.getClassId());
             event.setColor(request.getColor() != null ? request.getColor() : "#3B82F6");
@@ -100,6 +117,7 @@ public class HomeworkController {
             CalendarEvent savedEvent = calendarService.createEvent(event);
             return ResponseEntity.ok(savedEvent);
         } catch (Exception e) {
+            logger.error("Error creating calendar event: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("Error creating calendar event: " + e.getMessage());
         }
     }
@@ -109,23 +127,30 @@ public class HomeworkController {
     public ResponseEntity<?> getCalendarEventsByView(
             @RequestParam(required = false) String view,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestHeader("Authorization") String authHeader) {
         try {
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
             List<CalendarEvent> events;
             
             if ("today".equals(view)) {
-                events = calendarService.getTodayEvents(1L);
+                events = calendarService.getTodayEvents(userId);
             } else if ("week".equals(view)) {
-                events = calendarService.getWeekEvents(1L);
+                events = calendarService.getWeekEvents(userId);
             } else if ("month".equals(view)) {
-                events = calendarService.getMonthEvents(1L);
+                events = calendarService.getMonthEvents(userId);
             } else if (startDate != null && endDate != null) {
                 LocalDateTime start = LocalDateTime.parse(startDate);
                 LocalDateTime end = LocalDateTime.parse(endDate);
-                events = calendarService.getUserEventsInRange(1L, start, end);
+                events = calendarService.getUserEventsInRange(userId, start, end);
             } else {
                 // Default to upcoming events (next 30 days)
-                events = calendarService.getUpcomingEvents(1L, 30);
+                events = calendarService.getUpcomingEvents(userId, 30);
             }
             
             return ResponseEntity.ok(events);
@@ -136,10 +161,15 @@ public class HomeworkController {
 
     // Search calendar events
     @GetMapping("/calendar/search")
-    public ResponseEntity<?> searchCalendarEvents(@RequestParam String query) {
+    public ResponseEntity<?> searchCalendarEvents(@RequestParam String query, @RequestHeader("Authorization") String authHeader) {
         try {
-            // For now, search events for user ID 1 (first student)
-            List<CalendarEvent> events = calendarService.searchEvents(1L, query);
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            List<CalendarEvent> events = calendarService.searchEvents(userId, query);
             return ResponseEntity.ok(events);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error searching calendar events: " + e.getMessage());
@@ -148,10 +178,15 @@ public class HomeworkController {
 
     // Get calendar summary
     @GetMapping("/calendar/summary")
-    public ResponseEntity<?> getCalendarSummary() {
+    public ResponseEntity<?> getCalendarSummary(@RequestHeader("Authorization") String authHeader) {
         try {
-            // For now, get summary for user ID 1 (first student)
-            java.util.Map<CalendarEvent.EventType, Long> summary = calendarService.getCalendarSummary(1L);
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            java.util.Map<CalendarEvent.EventType, Long> summary = calendarService.getCalendarSummary(userId);
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error getting calendar summary: " + e.getMessage());
@@ -163,7 +198,9 @@ public class HomeworkController {
             @RequestParam(value = "title", required = true) String title,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "subject", required = true) String subject,
+            @RequestParam(value = "grade", required = true) Integer grade,
             @RequestParam(value = "classGrade", required = true) String classGrade,
+            @RequestParam(value = "classId", required = true) Long classId,
             @RequestParam(value = "dueDate", required = true) String dueDate,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestHeader("Authorization") String authHeader) {
@@ -179,6 +216,18 @@ public class HomeworkController {
             // Import and use JwtTokenProvider to extract email
             String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
             
+            // Debug: Log the token and extracted email
+            logger.debug("Auth header: {}", authHeader);
+            logger.debug("Token: {}", token);
+            logger.debug("Extracted teacher email: {}", teacherEmail);
+            
+            if (teacherEmail == null) {
+                logger.error("Failed to extract email from token");
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid token: Could not extract email");
+                return ResponseEntity.status(401).body(error);
+            }
+            
             logger.debug("Creating homework for teacher: {}", teacherEmail);
             
             // Create HomeworkRequest from individual parameters
@@ -186,7 +235,9 @@ public class HomeworkController {
             homeworkRequest.setTitle(title);
             homeworkRequest.setDescription(description);
             homeworkRequest.setSubject(subject);
+            homeworkRequest.setGrade(grade);
             homeworkRequest.setClassGrade(classGrade);
+            homeworkRequest.setClassId(classId);
             
             // Parse the ISO date string properly
             LocalDateTime dueDateTime;
@@ -237,9 +288,21 @@ public class HomeworkController {
             String token = authHeader.substring(7); // Remove "Bearer " prefix
             String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
             
+            // Debug: Log the token and extracted email
+            logger.debug("Auth header: {}", authHeader);
+            logger.debug("Token: {}", token);
+            logger.debug("Extracted teacher email: {}", teacherEmail);
+            
+            if (teacherEmail == null) {
+                logger.error("Failed to extract email from token");
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid token: Could not extract email");
+                return ResponseEntity.status(401).body(error);
+            }
+            
             logger.debug("Fetching homework for teacher: {}", teacherEmail);
             
-            List<Homework> homeworks = homeworkService.getTeacherHomework(teacherEmail);
+            List<HomeworkResponse> homeworks = homeworkService.getTeacherHomework(teacherEmail);
             logger.debug("Found {} homework assignments", homeworks.size());
             
             return ResponseEntity.ok(homeworks);
@@ -273,7 +336,7 @@ public class HomeworkController {
             }
             
             logger.debug("Fetching homework for student: {}", studentEmail);
-            List<Homework> homeworks = homeworkService.getStudentHomework(studentEmail, subject, sortBy, sortOrder);
+            List<StudentHomeworkResponse> homeworks = homeworkService.getStudentHomework(studentEmail, subject, sortBy, sortOrder);
             logger.debug("Found {} homework assignments for student", homeworks.size());
             
             return ResponseEntity.ok(homeworks);
@@ -307,7 +370,7 @@ public class HomeworkController {
             }
             
             logger.debug("Fetching homework for parent: {}", parentEmail);
-            List<Homework> homeworks = homeworkService.getParentHomework(parentEmail, subject, sortBy, sortOrder);
+            List<StudentHomeworkResponse> homeworks = homeworkService.getParentHomework(parentEmail, subject, sortBy, sortOrder);
             logger.debug("Found {} homework assignments for parent's children", homeworks.size());
             
             return ResponseEntity.ok(homeworks);
@@ -356,14 +419,60 @@ public class HomeworkController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateHomework(
             @PathVariable Long id,
+            @RequestParam(value = "title", required = true) String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "subject", required = true) String subject,
+            @RequestParam(value = "grade", required = true) Integer grade,
+            @RequestParam(value = "classGrade", required = true) String classGrade,
+            @RequestParam(value = "classId", required = true) Long classId,
+            @RequestParam(value = "dueDate", required = true) String dueDate,
             @RequestParam(required = false) MultipartFile file,
-            @Valid @RequestPart("homework") HomeworkRequest request,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String teacherEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
+            
+            if (teacherEmail == null) {
+                logger.error("Failed to extract email from token");
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid token: Could not extract email");
+                return ResponseEntity.status(401).body(error);
+            }
+            
             logger.debug("Updating homework {} for teacher: {}", id, teacherEmail);
             
-            Homework homework = homeworkService.updateHomework(id, request, file, teacherEmail);
+            // Create HomeworkRequest from individual parameters
+            HomeworkRequest homeworkRequest = new HomeworkRequest();
+            homeworkRequest.setTitle(title);
+            homeworkRequest.setDescription(description);
+            homeworkRequest.setSubject(subject);
+            homeworkRequest.setGrade(grade);
+            homeworkRequest.setClassGrade(classGrade);
+            homeworkRequest.setClassId(classId);
+            
+            // Parse the ISO date string properly
+            LocalDateTime dueDateTime;
+            try {
+                // Try parsing with ISO format first (handles Z timezone)
+                DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
+                dueDateTime = LocalDateTime.parse(dueDate, isoFormatter);
+            } catch (DateTimeParseException e) {
+                // Fallback: try parsing without timezone
+                try {
+                    dueDateTime = LocalDateTime.parse(dueDate);
+                } catch (DateTimeParseException e2) {
+                    throw new Exception("Invalid date format. Please use format: yyyy-MM-ddTHH:mm:ss");
+                }
+            }
+            homeworkRequest.setDueDate(dueDateTime);
+            
+            Homework homework = homeworkService.updateHomework(id, homeworkRequest, file, teacherEmail);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Homework updated successfully");
@@ -384,7 +493,20 @@ public class HomeworkController {
             @PathVariable Long id,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            String teacherEmail = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            if (!jwtTokenProvider.validateToken(token)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid or expired token");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
             logger.debug("Deleting homework {} for teacher: {}", id, teacherEmail);
             
             homeworkService.deleteHomework(id, teacherEmail);
@@ -435,17 +557,38 @@ public class HomeworkController {
             request.setImageData(imageData);
             request.setPdfData(pdfData);
             
-            // Handle file uploads if present
+            // Handle file uploads if present - convert to base64 data
             if (voiceFile != null && !voiceFile.isEmpty()) {
-                request.setVoiceRecordingUrl("voice_uploaded_" + System.currentTimeMillis() + ".wav");
+                try {
+                    byte[] audioBytes = voiceFile.getBytes();
+                    String audioBase64 = Base64.getEncoder().encodeToString(audioBytes);
+                    request.setAudioData(audioBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting voice file to base64", e);
+                    throw new RuntimeException("Failed to process voice file");
+                }
             }
             
             if (photoFile != null && !photoFile.isEmpty()) {
-                request.setPhotoUrl("photo_uploaded_" + System.currentTimeMillis() + ".jpg");
+                try {
+                    byte[] imageBytes = photoFile.getBytes();
+                    String imageBase64 = Base64.getEncoder().encodeToString(imageBytes);
+                    request.setImageData(imageBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting photo file to base64", e);
+                    throw new RuntimeException("Failed to process photo file");
+                }
             }
             
             if (pdfFile != null && !pdfFile.isEmpty()) {
-                request.setPdfUrl("pdf_uploaded_" + System.currentTimeMillis() + ".pdf");
+                try {
+                    byte[] pdfBytes = pdfFile.getBytes();
+                    String pdfBase64 = Base64.getEncoder().encodeToString(pdfBytes);
+                    request.setPdfData(pdfBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting PDF file to base64", e);
+                    throw new RuntimeException("Failed to process PDF file");
+                }
             }
             
             HomeworkSubmissionResponse response = submissionService.submitHomework(request, studentEmail);
@@ -588,17 +731,38 @@ public class HomeworkController {
             if (imageData != null) request.setImageData(imageData);
             if (pdfData != null) request.setPdfData(pdfData);
             
-            // Handle file uploads if present
+            // Handle file uploads if present - convert to base64 data
             if (voiceFile != null && !voiceFile.isEmpty()) {
-                request.setVoiceRecordingUrl("voice_uploaded_" + System.currentTimeMillis() + ".wav");
+                try {
+                    byte[] audioBytes = voiceFile.getBytes();
+                    String audioBase64 = Base64.getEncoder().encodeToString(audioBytes);
+                    request.setAudioData(audioBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting voice file to base64", e);
+                    throw new RuntimeException("Failed to process voice file");
+                }
             }
             
             if (photoFile != null && !photoFile.isEmpty()) {
-                request.setPhotoUrl("photo_uploaded_" + System.currentTimeMillis() + ".jpg");
+                try {
+                    byte[] imageBytes = photoFile.getBytes();
+                    String imageBase64 = Base64.getEncoder().encodeToString(imageBytes);
+                    request.setImageData(imageBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting photo file to base64", e);
+                    throw new RuntimeException("Failed to process photo file");
+                }
             }
             
             if (pdfFile != null && !pdfFile.isEmpty()) {
-                request.setPdfUrl("pdf_uploaded_" + System.currentTimeMillis() + ".pdf");
+                try {
+                    byte[] pdfBytes = pdfFile.getBytes();
+                    String pdfBase64 = Base64.getEncoder().encodeToString(pdfBytes);
+                    request.setPdfData(pdfBase64);
+                } catch (IOException e) {
+                    logger.error("Error converting PDF file to base64", e);
+                    throw new RuntimeException("Failed to process PDF file");
+                }
             }
             
             HomeworkSubmissionResponse updatedSubmission = submissionService.updateSubmission(submissionId, request, studentEmail);
@@ -638,109 +802,8 @@ public class HomeworkController {
         }
     }
 
-    // Notification endpoints (since new controllers are not being detected)
-    
-    @GetMapping("/notifications/user")
-    public ResponseEntity<?> getUserNotifications() {
-        try {
-            // For now, return notifications for user ID 1 (first student)
-            // In a real system, this would extract user ID from JWT token
-            List<Notification> notifications = notificationService.getUserNotifications(1L);
-            return ResponseEntity.ok(notifications);
-        } catch (Exception e) {
-            logger.error("Failed to fetch user notifications", e);
-            return ResponseEntity.badRequest().body("Error retrieving notifications: " + e.getMessage());
-        }
-    }
-    
-    @GetMapping("/notifications/user/unread")
-    public ResponseEntity<?> getUserUnreadNotifications() {
-        try {
-            // For now, return unread notifications for user ID 1
-            List<Notification> notifications = notificationService.getUserUnreadNotifications(1L);
-            return ResponseEntity.ok(notifications);
-        } catch (Exception e) {
-            logger.error("Failed to fetch unread notifications", e);
-            return ResponseEntity.badRequest().body("Error retrieving unread notifications: " + e.getMessage());
-        }
-    }
-    
-    @PutMapping("/notifications/{id}/read")
-    public ResponseEntity<?> markNotificationAsRead(@PathVariable Long id) {
-        try {
-            Notification notification = notificationService.markAsRead(id);
-            return ResponseEntity.ok(notification);
-        } catch (Exception e) {
-            logger.error("Failed to mark notification as read", e);
-            return ResponseEntity.badRequest().body("Error marking notification as read: " + e.getMessage());
-        }
-    }
-    
-    @PutMapping("/notifications/mark-all-read")
-    public ResponseEntity<?> markAllNotificationsAsRead() {
-        try {
-            // For now, mark all as read for user ID 1
-            notificationService.markAllAsRead(1L);
-            return ResponseEntity.ok().body("All notifications marked as read");
-        } catch (Exception e) {
-            logger.error("Failed to mark all notifications as read", e);
-            return ResponseEntity.badRequest().body("Error marking all notifications as read: " + e.getMessage());
-        }
-    }
-    
-    @DeleteMapping("/notifications/{id}")
-    public ResponseEntity<?> deleteNotification(@PathVariable Long id) {
-        try {
-            notificationService.deleteNotification(id);
-            return ResponseEntity.ok().body("Notification deleted successfully");
-        } catch (Exception e) {
-            logger.error("Failed to delete notification", e);
-            return ResponseEntity.badRequest().body("Error deleting notification: " + e.getMessage());
-        }
-    }
-    
-    @DeleteMapping("/notifications/clear-all")
-    public ResponseEntity<?> clearAllNotifications() {
-        try {
-            // For now, clear all for user ID 1
-            notificationService.clearAllNotifications(1L);
-            return ResponseEntity.ok().body("All notifications cleared");
-        } catch (Exception e) {
-            logger.error("Failed to clear all notifications", e);
-            return ResponseEntity.badRequest().body("Error clearing all notifications: " + e.getMessage());
-        }
-    }
-    
-    @GetMapping("/notifications/user/count")
-    public ResponseEntity<?> getNotificationCount() {
-        try {
-            // For now, return count for user ID 1
-            long count = notificationService.getUserUnreadNotifications(1L).size();
-            return ResponseEntity.ok(count);
-        } catch (Exception e) {
-            logger.error("Failed to get notification count", e);
-            return ResponseEntity.badRequest().body("Error retrieving notification count: " + e.getMessage());
-        }
-    }
-    
-    @PostMapping("/notifications/test/create")
-    public ResponseEntity<?> createTestNotification() {
-        try {
-            Notification notification = notificationService.createNotification(
-                1L, 
-                Notification.NotificationType.NEW_HOMEWORK,
-                "Test Notification",
-                "This is a test notification",
-                1L,
-                "Test Homework",
-                Notification.NotificationPriority.NORMAL
-            );
-            return ResponseEntity.ok(notification);
-        } catch (Exception e) {
-            logger.error("Failed to create test notification", e);
-            return ResponseEntity.badRequest().body("Error creating test notification: " + e.getMessage());
-        }
-    }
+    // Notification endpoints have been moved to NotificationController
+    // All notification functionality is now handled by /homework/notifications endpoints
     
     // Class Management endpoints
     @PostMapping("/classes")
@@ -777,6 +840,16 @@ public class HomeworkController {
     public ResponseEntity<?> getClassesByTeacher(@PathVariable Long teacherId) {
         try {
             List<ClassResponse> classes = classService.getClassesByTeacher(teacherId);
+            return ResponseEntity.ok(classes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/teacher/{teacherId}/statistics")
+    public ResponseEntity<?> getClassesByTeacherWithStatistics(@PathVariable Long teacherId) {
+        try {
+            List<ClassResponse> classes = classService.getClassesByTeacherWithStatistics(teacherId);
             return ResponseEntity.ok(classes);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
@@ -836,5 +909,17 @@ public class HomeworkController {
     @GetMapping("/classes/test")
     public ResponseEntity<String> classTest() {
         return ResponseEntity.ok("Class endpoints are working from HomeworkController!");
+    }
+    
+    @GetMapping("/statistics/student/{studentId}")
+    public ResponseEntity<?> getStudentHomeworkStatistics(@PathVariable Long studentId) {
+        try {
+            Map<String, Object> stats = homeworkService.getStudentHomeworkStatistics(studentId);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("Error getting student homework statistics", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to get student statistics"));
+        }
     }
 } 

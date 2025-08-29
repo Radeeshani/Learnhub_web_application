@@ -65,41 +65,61 @@ public class CalendarService {
         calendarEventRepository.deleteById(eventId);
     }
     
-    // Get events for a user within a date range
+    // Get events for a user within a date range (now shows all events in range)
     public List<CalendarEvent> getUserEventsInRange(Long userId, LocalDateTime start, LocalDateTime end) {
-        return calendarEventRepository.findByUserIdAndStartTimeBetweenOrderByStartTimeAsc(userId, start, end);
+        // Return ALL events in the date range, not just user-specific ones
+        return calendarEventRepository.findByStartTimeBetweenOrderByStartTimeAsc(start, end);
     }
     
-    // Get today's events for a user
+    // Get today's events for a user (now shows all events for today)
     public List<CalendarEvent> getTodayEvents(Long userId) {
         LocalDateTime today = LocalDateTime.now();
-        return calendarEventRepository.findTodayEventsForUser(userId, today);
+        // Return ALL events for today, not just user-specific ones
+        return calendarEventRepository.findByStartTimeBetweenOrderByStartTimeAsc(
+            today.withHour(0).withMinute(0).withSecond(0),
+            today.withHour(23).withMinute(59).withSecond(59)
+        );
     }
     
-    // Get this week's events for a user
+    // Get this week's events for a user (now shows all events for the week)
     public List<CalendarEvent> getWeekEvents(Long userId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime weekStart = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).withHour(0).withMinute(0).withSecond(0);
         LocalDateTime weekEnd = weekStart.plusDays(7).minusSeconds(1);
         
-        return calendarEventRepository.findWeekEventsForUser(userId, weekStart, weekEnd);
+        // Return ALL events for the week, not just user-specific ones
+        return calendarEventRepository.findByStartTimeBetweenOrderByStartTimeAsc(weekStart, weekEnd);
     }
     
-    // Get this month's events for a user
+    // Get this month's events for a user (now shows all events for all users)
     public List<CalendarEvent> getMonthEvents(Long userId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime monthStart = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
         
-        return calendarEventRepository.findMonthEventsForUser(userId, monthStart, monthEnd);
+        // Debug logging
+        System.out.println("=== CalendarService.getMonthEvents Debug ===");
+        System.out.println("User ID: " + userId);
+        System.out.println("Current time: " + now);
+        System.out.println("Month start: " + monthStart);
+        System.out.println("Month end: " + monthEnd);
+        
+        // Return ALL events for the month, not just user-specific ones
+        List<CalendarEvent> events = calendarEventRepository.findByStartTimeBetweenOrderByStartTimeAsc(monthStart, monthEnd);
+        System.out.println("Found events: " + events.size());
+        events.forEach(event -> System.out.println("Event: " + event.getTitle() + " at " + event.getStartTime() + " for user: " + event.getUserId()));
+        System.out.println("=== End Debug ===");
+        
+        return events;
     }
     
-    // Get upcoming events for a user
+    // Get upcoming events for a user (now shows all upcoming events)
     public List<CalendarEvent> getUpcomingEvents(Long userId, int days) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endDate = now.plusDays(days);
         
-        return calendarEventRepository.findByUserIdAndStartTimeBetweenOrderByStartTimeAsc(userId, now, endDate);
+        // Return ALL upcoming events, not just user-specific ones
+        return calendarEventRepository.findByStartTimeBetweenOrderByStartTimeAsc(now, endDate);
     }
     
     // Create calendar event from homework assignment
@@ -190,9 +210,10 @@ public class CalendarService {
         return calendarEventRepository.findByUserIdAndEventTypeOrderByStartTimeAsc(userId, eventType);
     }
     
-    // Search events by title or description
+    // Search events by title or description (now searches all events)
     public List<CalendarEvent> searchEvents(Long userId, String searchTerm) {
-        List<CalendarEvent> allEvents = calendarEventRepository.findByUserIdOrderByStartTimeAsc(userId);
+        // Search ALL events, not just user-specific ones
+        List<CalendarEvent> allEvents = calendarEventRepository.findAll();
         
         return allEvents.stream()
             .filter(event -> 

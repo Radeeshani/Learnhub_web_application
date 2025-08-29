@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# EduBuddy Startup Script
+# LearnHub Startup Script
 # This script starts both the backend and frontend services
 
-echo "🚀 Starting EduBuddy..."
+echo "🚀 Starting LearnHub..."
 
 # Function to check if a port is in use
 check_port() {
@@ -78,7 +78,7 @@ else
 fi
 
 echo ""
-echo "🎉 EduBuddy is now running!"
+echo "🎉 LearnHub is now running!"
 echo ""
 echo "📍 Backend: http://localhost:8080/api"
 echo "📍 Frontend: http://localhost:5173"
@@ -98,7 +98,7 @@ echo "🛑 To stop the application, press Ctrl+C"
 # Function to cleanup on exit
 cleanup() {
     echo ""
-    echo "🛑 Stopping EduBuddy..."
+    echo "🛑 Stopping LearnHub..."
     kill $BACKEND_PID 2>/dev/null
     kill $FRONTEND_PID 2>/dev/null
     echo "✅ Application stopped."

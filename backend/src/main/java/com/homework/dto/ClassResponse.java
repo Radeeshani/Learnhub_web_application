@@ -24,10 +24,16 @@ public class ClassResponse {
     private String teacherName;
     private String teacherEmail;
     
+    // Teacher object for frontend compatibility
+    private TeacherInfo teacher;
+    
     // Statistics
     private Integer currentStudentCount;
     private Integer totalAssignments;
     private List<String> recentAssignments;
+    
+    // Enrolled students information
+    private List<StudentInfo> enrolledStudents;
     
     // Constructors
     public ClassResponse() {}
@@ -168,6 +174,14 @@ public class ClassResponse {
         this.teacherEmail = teacherEmail;
     }
     
+    public TeacherInfo getTeacher() {
+        return teacher;
+    }
+    
+    public void setTeacher(TeacherInfo teacher) {
+        this.teacher = teacher;
+    }
+    
     public Integer getCurrentStudentCount() {
         return currentStudentCount;
     }
@@ -190,6 +204,14 @@ public class ClassResponse {
     
     public void setRecentAssignments(List<String> recentAssignments) {
         this.recentAssignments = recentAssignments;
+    }
+    
+    public List<StudentInfo> getEnrolledStudents() {
+        return enrolledStudents;
+    }
+    
+    public void setEnrolledStudents(List<StudentInfo> enrolledStudents) {
+        this.enrolledStudents = enrolledStudents;
     }
     
     @Override

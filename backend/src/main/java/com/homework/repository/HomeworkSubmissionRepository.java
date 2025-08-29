@@ -31,4 +31,16 @@ public interface HomeworkSubmissionRepository extends JpaRepository<HomeworkSubm
     
     @Query("SELECT hs FROM HomeworkSubmission hs WHERE hs.studentId = :studentId AND hs.status = :status")
     List<HomeworkSubmission> findByStudentIdAndStatus(@Param("studentId") Long studentId, @Param("status") HomeworkSubmission.SubmissionStatus status);
+    
+    // Find top 5 submissions by submission date
+    List<HomeworkSubmission> findTop5ByOrderBySubmittedAtDesc();
+    
+    // Count submissions by student
+    long countByStudentId(Long studentId);
+    
+    // Count submissions by status
+    long countByStatus(HomeworkSubmission.SubmissionStatus status);
+    
+    // Count graded submissions by student
+    long countByStudentIdAndStatus(Long studentId, HomeworkSubmission.SubmissionStatus status);
 }

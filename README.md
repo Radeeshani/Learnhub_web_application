@@ -1,4 +1,4 @@
-# EduBuddy - Your Learning Companion
+# LearnHub - Your Learning Companion
 
 A comprehensive web application designed for primary education institutions to manage homework assignments, student submissions, and educational activities.
 

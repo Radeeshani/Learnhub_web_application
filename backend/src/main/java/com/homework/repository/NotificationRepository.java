@@ -44,6 +44,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("SELECT n FROM Notification n WHERE n.type = 'DUE_SOON' AND n.createdAt > :since")
     List<Notification> findDueSoonNotificationsSince(@Param("since") LocalDateTime since);
     
+    // Find top 5 notifications by creation date
+    List<Notification> findTop5ByOrderByCreatedAtDesc();
+    
+    // Count unread notifications
+    long countByReadFalse();
+    
     // Delete old notifications (cleanup)
     void deleteByCreatedAtBefore(LocalDateTime before);
 }

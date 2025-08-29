@@ -8,38 +8,106 @@
   }
   
   body {
-    @apply bg-background;
+    @apply bg-gradient-to-br from-teal-50 via-white to-coral-50;
   }
+}
+
+/* Creative Learning Hub Theme Colors */
+:root {
+  --primary-teal: #0D9488;
+  --primary-coral: #F97316;
+  --accent-purple: #8B5CF6;
+  --accent-yellow: #EAB308;
+  --neutral-white: #FFFFFF;
+  --neutral-gray: #F8FAFC;
+  --text-dark: #1E293B;
+  --text-light: #64748B;
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-white px-6 py-3 rounded-2xl font-medium shadow-soft 
-           hover:bg-blue-600 transition-all duration-200 
-           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply bg-teal-600 text-white px-6 py-3 rounded-3xl font-semibold shadow-lg 
+           hover:bg-teal-700 hover:shadow-xl transform hover:scale-105 transition-all duration-300 
+           focus:outline-none focus:ring-4 focus:ring-teal-200 focus:ring-offset-2;
   }
   
   .btn-secondary {
-    @apply bg-white text-primary border-2 border-primary px-6 py-3 rounded-2xl font-medium 
-           shadow-soft hover:bg-primary hover:text-white transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply bg-white text-teal-600 border-2 border-teal-600 px-6 py-3 rounded-3xl font-semibold 
+           shadow-lg hover:bg-teal-600 hover:text-white hover:shadow-xl transform hover:scale-105 transition-all duration-300
+           focus:outline-none focus:ring-4 focus:ring-teal-200 focus:ring-offset-2;
+  }
+  
+  .btn-coral {
+    @apply bg-coral-500 text-white px-6 py-3 rounded-3xl font-semibold shadow-lg 
+           hover:bg-coral-600 hover:shadow-xl transform hover:scale-105 transition-all duration-300 
+           focus:outline-none focus:ring-4 focus:ring-coral-200 focus:ring-offset-2;
+  }
+  
+  .btn-purple {
+    @apply bg-purple-500 text-white px-6 py-3 rounded-3xl font-semibold shadow-lg 
+           hover:bg-purple-600 hover:shadow-xl transform hover:scale-105 transition-all duration-300 
+           focus:outline-none focus:ring-4 focus:ring-purple-200 focus:ring-offset-2;
   }
   
   .card {
-    @apply bg-white rounded-2xl shadow-soft-lg p-6 border border-gray-100;
+    @apply bg-white rounded-3xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-teal-50 rounded-3xl shadow-xl p-6 border border-teal-100 hover:shadow-2xl transition-all duration-300;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none 
-           focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none 
+           focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300;
   }
   
   .page-title {
-    @apply text-3xl font-bold text-accent mb-6;
+    @apply text-4xl font-bold bg-gradient-to-r from-teal-600 to-coral-500 bg-clip-text text-transparent mb-6;
   }
   
   .section-title {
-    @apply text-xl font-semibold text-accent mb-4;
+    @apply text-2xl font-bold text-teal-700 mb-4;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center px-4 py-3 text-gray-700 rounded-2xl hover:bg-teal-50 hover:text-teal-700 
+           transition-all duration-300 cursor-pointer hover:shadow-md hover:transform hover:scale-105;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg transform scale-105;
+    animation: activePulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes activePulse {
+    0%, 100% {
+      box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.3);
+    }
+    50% {
+      box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.5);
+    }
+  }
+  
+  .sidebar-item.active .sidebar-icon {
+    @apply bg-white/20 border border-white/30 shadow-inner;
+  }
+  
+  .sidebar-item.active span {
+    @apply font-bold;
+  }
+  
+  /* Height management utilities */
+  .content-area {
+    @apply min-h-full h-full flex flex-col;
+  }
+  
+  .page-container {
+    @apply flex-1 min-h-0 overflow-auto;
+  }
+  
+  .sidebar-layout {
+    @apply flex h-screen overflow-hidden;
   }
 }
 
@@ -125,4 +193,241 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+} 
+
+/* Page height management */
+.page-wrapper {
+  @apply min-h-screen h-full w-full;
+}
+
+.content-wrapper {
+  @apply min-h-full h-full w-full flex flex-col;
+}
+
+/* Ensure pages extend fully */
+.page-content {
+  @apply min-h-screen w-full pb-20;
+}
+
+/* Sidebar content height */
+.sidebar-content {
+  @apply h-full min-h-screen flex flex-col;
+}
+
+/* Main content area height fix */
+.main-content-area {
+  @apply h-full min-h-screen flex flex-col;
+}
+
+.content-scroll-area {
+  @apply flex-1 overflow-auto h-full;
+}
+
+.page-content-wrapper {
+  @apply min-h-full h-full w-full;
+} 
+
+/* Ensure main content fills remaining space */
+.main-content-area {
+  @apply flex-1 flex flex-col min-w-0;
+  width: calc(100vw - 280px);
+  max-width: calc(100vw - 280px);
+}
+
+.main-content-area.sidebar-collapsed {
+  width: calc(100vw - 80px);
+  max-width: calc(100vw - 80px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .main-content-area {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  
+  .main-content-area.sidebar-collapsed {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+/* Ensure content scroll area takes full width */
+.content-scroll-area {
+  @apply flex-1 overflow-auto h-full w-full;
+  min-width: 0;
+}
+
+/* Fix for Profile component to use full width */
+.profile-container {
+  @apply w-full max-w-none;
+}
+
+/* Ensure no horizontal overflow */
+body, html {
+  overflow-x: hidden;
+  width: 100vw;
+  max-width: 100vw;
+}
+
+/* Fix sidebar layout */
+.sidebar-layout {
+  @apply flex h-screen overflow-hidden;
+  width: 100vw;
+}
+
+/* Additional fixes for layout */
+.main-content-area {
+  @apply flex-1 flex flex-col min-w-0;
+  width: calc(100vw - 280px);
+  max-width: calc(100vw - 280px);
+  overflow-x: hidden;
+}
+
+.main-content-area.sidebar-collapsed {
+  width: calc(100vw - 80px);
+  max-width: calc(100vw - 80px);
+  overflow-x: hidden;
+}
+
+/* Ensure the page content wrapper takes full width */
+.page-content-wrapper {
+  @apply min-h-full h-full w-full;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Fix for any potential horizontal scrolling */
+.content-scroll-area {
+  @apply flex-1 overflow-auto h-full w-full;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Ensure Profile component uses full available width */
+.profile-container {
+  @apply w-full;
+  min-width: 0;
+  max-width: none;
+} 
+
+/* Sidebar scrolling styles */
+.sidebar-scrollable {
+  @apply overflow-y-auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 184, 166, 0.3) transparent;
+  max-height: calc(100vh - 200px); /* Account for header and footer */
+}
+
+.sidebar-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(20, 184, 166, 0.3);
+  border-radius: 3px;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 184, 166, 0.5);
+}
+
+/* Ensure sidebar has proper height constraints */
+.sidebar-container {
+  @apply h-full flex flex-col;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  @apply flex-shrink-0;
+}
+
+.sidebar-footer {
+  @apply flex-shrink-0;
+}
+
+.sidebar-navigation {
+  @apply flex-1 min-h-0;
+  overflow-y: auto;
+}
+
+/* Additional sidebar scrolling improvements */
+.sidebar-navigation {
+  @apply flex-1 min-h-0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For iOS smooth scrolling */
+}
+
+/* Ensure proper spacing for collapsed sidebar */
+.sidebar-container.sidebar-collapsed .sidebar-navigation {
+  @apply px-2;
+}
+
+/* Hide scrollbar when not needed */
+.sidebar-navigation:not(:hover)::-webkit-scrollbar-thumb {
+  background: rgba(20, 184, 166, 0.1);
+}
+
+/* Ensure navigation items don't get cut off */
+.sidebar-item {
+  @apply flex items-center px-4 py-3 text-gray-700 rounded-2xl hover:bg-teal-50 hover:text-teal-700 
+         transition-all duration-300 cursor-pointer hover:shadow-md hover:transform hover:scale-105;
+  min-height: 48px; /* Ensure consistent height */
+} 
+
+/* Custom scrollbar styles for registration form */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.5) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+.scrollbar-thumb-emerald-300 {
+  scrollbar-color: rgba(16, 185, 129, 0.5) transparent;
+}
+
+.scrollbar-thumb-emerald-400 {
+  scrollbar-color: rgba(16, 185, 129, 0.7) transparent;
+}
+
+.scrollbar-track-transparent {
+  scrollbar-color: rgba(16, 185, 129, 0.5) transparent;
+}
+
+/* Ensure proper height constraints for scrollable forms */
+.form-container-scrollable {
+  max-height: 100vh;
+  overflow-y: auto;
+  padding-right: 8px; /* Account for scrollbar width */
+}
+
+/* Smooth scrolling for all scrollable elements */
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  scroll-behavior: smooth;
 } 

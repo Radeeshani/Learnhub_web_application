@@ -25,16 +25,118 @@ public class ProfilePictureController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfilePictureController.class);
 
+    @GetMapping("/{fileName:.+}")
+    public ResponseEntity<Resource> serveProfilePicture(@PathVariable String fileName) {
+        try {
+            logger.debug("Attempting to serve profile picture: {}", fileName);
+            
+            // Try multiple possible paths for the uploads directory
+            Path filePath = null;
+            Resource resource = null;
+            
+            // Method 1: Try relative to current working directory
+            Path currentDir = Paths.get("").toAbsolutePath();
+            Path uploadsDir1 = currentDir.resolve("uploads").resolve("profile-pictures");
+            Path filePath1 = uploadsDir1.resolve(fileName);
+            
+            logger.debug("Current directory: {}", currentDir);
+            logger.debug("Uploads directory (method 1): {}", uploadsDir1);
+            logger.debug("File path (method 1): {}", filePath1);
+            
+            if (Files.exists(filePath1)) {
+                filePath = filePath1;
+                resource = new UrlResource(filePath.toUri());
+                logger.debug("Profile picture found using method 1: {}", filePath);
+            } else {
+                // Method 2: Try relative to project root (backend directory)
+                Path projectRoot = currentDir.getParent();
+                if (projectRoot != null) {
+                    Path uploadsDir2 = projectRoot.resolve("uploads").resolve("profile-pictures");
+                    Path filePath2 = uploadsDir2.resolve(fileName);
+                    
+                    logger.debug("Project root: {}", projectRoot);
+                    logger.debug("Uploads directory (method 2): {}", uploadsDir2);
+                    logger.debug("File path (method 2): {}", filePath2);
+                    
+                    if (Files.exists(filePath2)) {
+                        filePath = filePath2;
+                        resource = new UrlResource(filePath.toUri());
+                        logger.debug("Profile picture found using method 2: {}", filePath);
+                    }
+                }
+                
+                // Method 3: Try absolute path to project directory
+                if (filePath == null) {
+                    Path absolutePath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/uploads/profile-pictures");
+                    Path filePath3 = absolutePath.resolve(fileName);
+                    
+                    logger.debug("Absolute path: {}", absolutePath);
+                    logger.debug("File path (method 3): {}", filePath3);
+                    
+                    if (Files.exists(filePath3)) {
+                        filePath = filePath3;
+                        resource = new UrlResource(filePath.toUri());
+                        logger.debug("Profile picture found using method 3: {}", filePath);
+                    }
+                }
+            }
 
-
+            if (resource != null && resource.exists() && resource.isReadable()) {
+                String contentType = determineContentType(fileName);
+                
+                return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                    .body(resource);
+            } else {
+                logger.warn("Profile picture not found or not readable. Tried all methods.");
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException ex) {
+            logger.error("Malformed URL exception for profile picture: {}", fileName, ex);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            logger.error("Error serving profile picture: {}", fileName, ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
         try {
+            // Use the same path resolution logic as the GET method
+            Path uploadPath = null;
+            
+            // Method 1: Try relative to current working directory
+            Path currentDir = Paths.get("").toAbsolutePath();
+            Path uploadPath1 = currentDir.resolve("uploads").resolve("profile-pictures");
+            
+            if (Files.exists(uploadPath1)) {
+                uploadPath = uploadPath1;
+                logger.debug("Using upload path (method 1): {}", uploadPath);
+            } else {
+                // Method 2: Try relative to project root (backend directory)
+                Path projectRoot = currentDir.getParent();
+                if (projectRoot != null) {
+                    Path uploadPath2 = projectRoot.resolve("uploads").resolve("profile-pictures");
+                    
+                    if (Files.exists(uploadPath2)) {
+                        uploadPath = uploadPath2;
+                        logger.debug("Using upload path (method 2): {}", uploadPath);
+                    }
+                }
+                
+                // Method 3: Use absolute path to project directory
+                if (uploadPath == null) {
+                    uploadPath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/uploads/profile-pictures");
+                    logger.debug("Using upload path (method 3): {}", uploadPath);
+                }
+            }
+            
             // Create upload directory if it doesn't exist
-            Path uploadPath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/backend/uploads/profile-pictures");
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
+                logger.info("Created upload directory: {}", uploadPath);
             }
 
             // Validate file type
@@ -53,7 +155,7 @@ public class ProfilePictureController {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            logger.info("Profile picture uploaded successfully: {}", filename);
+            logger.info("Profile picture uploaded successfully: {} to {}", filename, filePath);
 
             return ResponseEntity.ok().body("Profile picture uploaded successfully: " + filename);
 
@@ -63,26 +165,10 @@ public class ProfilePictureController {
         }
     }
 
-    @GetMapping("/{fileName:.+}")
-    public ResponseEntity<Resource> serveProfilePicture(@PathVariable String fileName) {
-        try {
-            Path filePath = Paths.get("/Volumes/External_01/ASH/Projects/Homework Application for Primary Education/backend/uploads/profile-pictures").resolve(fileName);
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (resource.exists() && resource.isReadable()) {
-                String contentType = determineContentType(fileName);
-                
-                return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                    .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (MalformedURLException ex) {
-            logger.error("Malformed URL exception for file: {}", fileName, ex);
-            return ResponseEntity.badRequest().build();
-        }
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        logger.info("Profile picture controller test endpoint called");
+        return ResponseEntity.ok("Profile picture controller is working!");
     }
 
     private String determineContentType(String fileName) {

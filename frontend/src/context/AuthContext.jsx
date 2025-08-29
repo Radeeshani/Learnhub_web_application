@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Configure axios defaults globally
 axios.defaults.withCredentials = true;
-// axios.defaults.baseURL = 'http://localhost:8080'; // Using proxy instead
+// Remove hardcoded base URL to use Vite proxy
 
 const AuthContext = createContext();
 

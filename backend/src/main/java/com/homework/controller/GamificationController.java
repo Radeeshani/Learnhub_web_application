@@ -42,10 +42,15 @@ public class GamificationController {
                     
                     if (jwtTokenProvider.validateToken(token)) {
                         userId = jwtTokenProvider.getUserIdFromToken(token);
+                        logger.debug("Successfully extracted user ID: {} from token", userId);
+                    } else {
+                        logger.debug("Token validation failed, token is invalid or expired");
                     }
                 } catch (Exception e) {
-                    logger.debug("Token validation failed, using default user: {}", e.getMessage());
+                    logger.debug("Token validation failed with exception: {}", e.getMessage());
                 }
+            } else {
+                logger.debug("No authorization header provided");
             }
             
             // If no valid token, use default user ID for testing
@@ -338,37 +343,7 @@ public class GamificationController {
         }
     }
     
-    @PostMapping("/challenges/{challengeId}/progress")
-    public ResponseEntity<?> updateChallengeProgress(
-            @PathVariable Long challengeId,
-            @RequestBody Map<String, Integer> request,
-            @RequestHeader("Authorization") String authHeader) {
-        try {
-            String token = authHeader.substring(7); // Remove "Bearer " prefix
-            
-            if (!jwtTokenProvider.validateToken(token)) {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Invalid or expired token");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-            }
-            
-            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            Integer progress = request.get("progress");
-            
-            if (progress == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Progress value is required");
-                return ResponseEntity.badRequest().body(error);
-            }
-            
-            gamificationService.updateChallengeProgress(userId, challengeId, progress);
-            return ResponseEntity.ok(Map.of("message", "Challenge progress updated successfully"));
-            
-        } catch (Exception e) {
-            logger.error("Failed to update challenge progress", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to update challenge progress");
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
+    // REMOVED: Manual progress update endpoint to prevent cheating
+    // Progress can ONLY be updated through actual actions (homework submission, grading, etc.)
+    // This ensures the gamification system is fair and cannot be manipulated
 }

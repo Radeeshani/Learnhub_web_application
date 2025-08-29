@@ -10,27 +10,49 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
+@RequestMapping("/v1/files")
 public class FileController {
 
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
 
-    @GetMapping("/uploads/homework/{fileName:.+}")
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        logger.info("FileController test endpoint called");
+        return ResponseEntity.ok("FileController is working!");
+    }
+    
+    @GetMapping("/test-path")
+    public ResponseEntity<Map<String, String>> testPath() {
+        Path uploadsDir = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
+        Map<String, String> response = new HashMap<>();
+        response.put("uploadsDirectory", uploadsDir.toString());
+        response.put("exists", String.valueOf(Files.exists(uploadsDir)));
+        response.put("isDirectory", String.valueOf(Files.isDirectory(uploadsDir)));
+        logger.info("FileController test-path endpoint called. Uploads dir: {}, exists: {}, isDirectory: {}", 
+                   uploadsDir, Files.exists(uploadsDir), Files.isDirectory(uploadsDir));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/download/homework/{fileName:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String fileName) {
         try {
             logger.debug("Attempting to serve file: {}", fileName);
             
-            // Get the current working directory and resolve backend/uploads/homework
-            Path currentDir = Paths.get("").toAbsolutePath();
-            Path uploadsDir = currentDir.resolve("backend").resolve("uploads").resolve("homework");
+            // Use the same absolute path as HomeworkService for consistency
+            Path uploadsDir = Paths.get("backend/uploads/homework").toAbsolutePath().normalize();
             Path filePath = uploadsDir.resolve(fileName);
             
-            logger.debug("Current directory: {}", currentDir);
             logger.debug("Uploads directory: {}", uploadsDir);
             logger.debug("File path: {}", filePath);
+            logger.debug("File exists: {}", Files.exists(filePath));
+            logger.debug("File is readable: {}", Files.isReadable(filePath));
             
             Resource resource = new UrlResource(filePath.toUri());
 
@@ -68,5 +90,5 @@ public class FileController {
         } else {
             return "application/octet-stream";
         }
-        }
-    } 
+    }
+} 

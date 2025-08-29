@@ -1,6 +1,7 @@
 package com.homework.controller;
 
 import com.homework.entity.Reminder;
+import com.homework.dto.ReminderResponse;
 import com.homework.service.ReminderService;
 import com.homework.security.JwtTokenProvider;
 import org.slf4j.Logger;
@@ -47,7 +48,9 @@ public class ReminderController {
             }
 
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            List<Reminder> reminders = reminderService.getUserReminders(userId);
+            
+            // Get both pending reminders and processed reminder notifications
+            List<ReminderResponse> reminders = reminderService.getUserRemindersWithNotifications(userId);
             
             return ResponseEntity.ok(reminders);
         } catch (Exception e) {
@@ -85,7 +88,7 @@ public class ReminderController {
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
             logger.debug("Extracted user ID: {}", userId);
             
-            List<Reminder> reminders = reminderService.getUserUnreadReminders(userId);
+            List<ReminderResponse> reminders = reminderService.getUserUnreadReminders(userId);
             logger.debug("Found {} unread reminders for user {}", reminders.size(), userId);
             
             return ResponseEntity.ok(reminders);
@@ -187,7 +190,7 @@ public class ReminderController {
             }
 
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            List<Reminder> unreadReminders = reminderService.getUserUnreadReminders(userId);
+            List<ReminderResponse> unreadReminders = reminderService.getUserUnreadReminders(userId);
             long count = unreadReminders.size();
             
             Map<String, Object> response = new HashMap<>();
@@ -202,44 +205,9 @@ public class ReminderController {
         }
     }
     
-    /**
-     * Create a custom reminder for a homework assignment
-     */
-    @PostMapping("/create")
-    public ResponseEntity<?> createReminder(
-            @RequestBody Map<String, Object> request,
-            @RequestHeader("Authorization") String authHeader) {
-        try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Invalid authorization header");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-            }
-
-            String token = authHeader.substring(7);
-            if (!jwtTokenProvider.validateToken(token)) {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Invalid or expired token");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-            }
-
-            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            Long homeworkId = Long.valueOf(request.get("homeworkId").toString());
-            String reminderType = (String) request.get("reminderType");
-            String customTime = (String) request.get("customTime");
-
-            Reminder reminder = reminderService.createCustomReminder(userId, homeworkId, reminderType, customTime);
-            
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Reminder created successfully");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.error("Error creating reminder", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to create reminder: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
+    // REMOVED: Custom reminder creation endpoint
+    // Smart reminders are now automatically created and managed by the system
+    // This prevents duplicate notifications and provides better UX
 
     /**
      * Test endpoint to check if reminders are working
@@ -247,5 +215,21 @@ public class ReminderController {
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Reminder endpoints are working!");
+    }
+    
+    /**
+     * Test endpoint to manually trigger reminder processing
+     */
+    @GetMapping("/test/process")
+    public ResponseEntity<String> testProcessReminders() {
+        try {
+            // Manually trigger the reminder processing
+            reminderService.processPendingReminders();
+            return ResponseEntity.ok("Reminder processing triggered successfully!");
+        } catch (Exception e) {
+            logger.error("Error testing reminder processing", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error testing reminder processing: " + e.getMessage());
+        }
     }
 }

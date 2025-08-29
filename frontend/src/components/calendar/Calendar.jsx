@@ -22,11 +22,19 @@ const Calendar = () => {
     allDay: false,
     eventType: 'CUSTOM',
     color: '#3B82F6',
-    location: ''
+    location: '',
+    recurring: false,
+    recurrencePattern: ''
   });
 
   // Check if user can add events (only teachers and admins)
   const canAddEvents = user && (user.role === 'TEACHER' || user.role === 'ADMIN');
+  
+  // Debug user information
+  console.log('Calendar component - Current user:', user);
+  console.log('Calendar component - User ID:', user?.id);
+  console.log('Calendar component - User role:', user?.role);
+  console.log('Calendar component - Can add events:', canAddEvents);
 
   // Navigate back to dashboard
   const navigateBack = () => {
@@ -35,21 +43,39 @@ const Calendar = () => {
 
   // Fetch calendar events
   const fetchEvents = async () => {
-    if (!token) return;
+    if (!token) {
+      console.error('No token available for calendar events fetch');
+      return;
+    }
     
     try {
       setLoading(true);
-              const response = await fetch(`/api/homework/calendar/events?view=${view}`, {
+      console.log('Fetching calendar events for view:', view);
+      console.log('Current user:', user);
+      console.log('Token available:', !!token);
+      
+      const response = await fetch(`/api/homework/calendar/events/view?view=${view}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events || data); // Handle both response formats
+        console.log('Calendar events response:', data);
+        
+        const eventsData = data.events || data;
+        console.log('Setting events:', eventsData);
+        console.log('Events array length:', eventsData.length);
+        
+        setEvents(eventsData);
       } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch calendar events:', response.status, errorText);
         showError('Failed to fetch calendar events', 'Please try again later');
       }
     } catch (error) {
@@ -68,7 +94,7 @@ const Calendar = () => {
       setLoading(true);
       // For now, we'll implement search in the backend later
       // For now, just fetch all events and filter client-side
-              const response = await fetch(`/api/homework/calendar/events`, {
+      const response = await fetch(`/api/homework/calendar/events`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -99,9 +125,19 @@ const Calendar = () => {
   const createEvent = async () => {
     if (!token || !canAddEvents) return;
     
+    // Validate required fields
+    if (!newEvent.title || !newEvent.startTime || !newEvent.endTime) {
+      showError('Missing required fields', 'Please fill in title, start time, and end time');
+      return;
+    }
+    
     try {
       setLoading(true);
-              const response = await fetch('/api/homework/calendar/events', {
+      
+      // Log what we're sending for debugging
+      console.log('Sending event data:', newEvent);
+      
+      const response = await fetch('/api/homework/calendar/events', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -121,11 +157,15 @@ const Calendar = () => {
           allDay: false,
           eventType: 'CUSTOM',
           color: '#3B82F6',
-          location: ''
+          location: '',
+          recurring: false,
+          recurrencePattern: ''
         });
         fetchEvents(); // Refresh events
       } else {
-        showError('Failed to create event', 'Please try again later');
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        showError('Failed to create event', `Backend error: ${errorData}`);
       }
     } catch (error) {
       console.error('Error creating event', error);
@@ -180,8 +220,21 @@ const Calendar = () => {
   // Get events for a specific date
   const getEventsForDate = (date) => {
     return events.filter(event => {
-      const eventDate = new Date(event.startTime);
-      return eventDate.toDateString() === date.toDateString();
+      try {
+        // Handle both string and Date objects for startTime
+        const eventDate = event.startTime instanceof Date ? event.startTime : new Date(event.startTime);
+        
+        // Check if the date is valid
+        if (isNaN(eventDate.getTime())) {
+          console.warn('Invalid event date:', event.startTime, 'for event:', event.title);
+          return false;
+        }
+        
+        return eventDate.toDateString() === date.toDateString();
+      } catch (error) {
+        console.error('Error parsing event date:', error, 'for event:', event);
+        return false;
+      }
     });
   };
 
@@ -246,33 +299,38 @@ const Calendar = () => {
     fetchEvents();
   }, [view, currentDate]);
 
+  // Debug effect to log events changes
+  useEffect(() => {
+    console.log('Events state changed:', events);
+    console.log('Current date:', currentDate);
+    console.log('Current month:', currentDate.getMonth(), 'Current year:', currentDate.getFullYear());
+  }, [events, currentDate]);
+
   const monthData = getMonthData();
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                      'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-coral-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Fun Header with Back Button */}
+        {/* Header with Back Button */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={navigateBack}
-                className="group inline-flex items-center px-4 py-3 border-2 border-purple-300 shadow-lg text-sm leading-4 font-medium rounded-xl text-purple-700 bg-white hover:bg-purple-50 hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                className="btn-secondary bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white border-0 px-6 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
-                <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:animate-bounce" />
-                <span className="font-bold">Back to Dashboard</span>
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                <span>Back to Dashboard</span>
               </button>
               
-              <div className="flex items-center space-x-3">
-                <div className="flex space-x-1">
-                  <SparklesIcon className="h-8 w-8 text-yellow-500 animate-pulse" />
-                  <StarIcon className="h-8 w-8 text-pink-500 animate-bounce" />
-                  <FireIcon className="h-8 w-8 text-orange-500 animate-pulse" />
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-teal-100 to-coral-100 rounded-2xl flex items-center justify-center">
+                  <SparklesIcon className="h-8 w-8 text-teal-600" />
                 </div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                  ✨ Student Calendar ✨
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-teal-600 to-coral-600 bg-clip-text text-transparent">
+                  ✨ Learning Calendar ✨
                 </h1>
               </div>
             </div>
@@ -281,16 +339,16 @@ const Calendar = () => {
             {canAddEvents && (
               <button
                 onClick={() => setShowAddEventModal(true)}
-                className="group inline-flex items-center px-6 py-3 border-2 border-transparent text-sm font-medium rounded-xl shadow-lg text-white bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl animate-pulse"
+                className="btn-primary bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110"
               >
-                <PlusIcon className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                <span className="font-bold">Add Event</span>
+                <PlusIcon className="h-6 w-6 mr-2" />
+                <span>Add Event</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Fun Search and View Controls */}
+        {/* Search and View Controls */}
         <div className="mb-8 flex flex-col sm:flex-row gap-6">
           <div className="flex-1">
             <div className="relative group">
@@ -299,9 +357,9 @@ const Calendar = () => {
                 placeholder="🔍 Search for exciting events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border-2 border-purple-200 rounded-2xl focus:ring-4 focus:ring-purple-200 focus:border-purple-400 text-lg transition-all duration-300 transform group-hover:scale-105 shadow-lg"
+                className="input-field w-full pl-12 pr-4 py-4 border-2 border-teal-200 rounded-2xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 text-lg transition-all duration-300 transform group-hover:scale-105 shadow-lg"
               />
-              <MagnifyingGlassIcon className="h-6 w-6 text-purple-400 absolute left-4 top-4 group-hover:animate-bounce" />
+              <MagnifyingGlassIcon className="h-6 w-6 text-teal-400 absolute left-4 top-4" />
             </div>
           </div>
           
@@ -312,75 +370,82 @@ const Calendar = () => {
                 onClick={() => setView(viewType)}
                 className={`group px-6 py-4 text-sm font-bold rounded-2xl transition-all duration-300 transform hover:scale-110 ${
                   view === viewType 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl scale-110' 
-                    : 'bg-white text-gray-700 border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 shadow-lg hover:shadow-xl'
+                    ? 'bg-gradient-to-r from-teal-500 to-coral-500 text-white shadow-xl scale-110' 
+                    : 'bg-white text-gray-700 border-2 border-teal-200 hover:border-teal-400 hover:bg-teal-50 shadow-lg hover:shadow-xl'
                 }`}
               >
                 <span className="capitalize">{viewType}</span>
                 {view === viewType && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-coral-400 rounded-full animate-ping"></div>
                 )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Fun Month Navigation */}
-        <div className="mb-8 flex items-center justify-between bg-white rounded-3xl p-6 shadow-2xl border-2 border-purple-100">
-          <button
-            onClick={goToPreviousMonth}
-            className="group p-3 rounded-2xl hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 transition-all duration-300 transform hover:scale-110 hover:shadow-lg"
-          >
-            <ChevronLeftIcon className="h-8 w-8 text-purple-600 group-hover:animate-bounce" />
-          </button>
-          
-          <div className="flex items-center space-x-6">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
+        {/* Month Navigation */}
+        <div className="card mb-8">
+          <div className="flex items-center justify-between">
             <button
-              onClick={goToToday}
-              className="group px-6 py-3 text-lg font-bold text-white bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 hover:shadow-xl animate-pulse"
+              onClick={goToPreviousMonth}
+              className="group p-4 rounded-2xl hover:bg-gradient-to-r hover:from-teal-100 hover:to-coral-100 transition-all duration-300 transform hover:scale-110 hover:shadow-lg"
             >
-              🎯 Today
+              <ChevronLeftIcon className="h-8 w-8 text-teal-600" />
+            </button>
+            
+            <div className="flex items-center space-x-6">
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-coral-600 bg-clip-text text-transparent">
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </h2>
+              <button
+                onClick={goToToday}
+                className="btn-primary bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+              >
+                🎯 Today
+              </button>
+            </div>
+            
+            <button
+              onClick={goToNextMonth}
+              className="group p-4 rounded-2xl hover:bg-gradient-to-r hover:from-teal-100 hover:to-coral-100 transition-all duration-300 transform hover:scale-110 hover:shadow-lg"
+            >
+              <ChevronRightIcon className="h-8 w-8 text-teal-600" />
             </button>
           </div>
-          
-          <button
-            onClick={goToNextMonth}
-            className="group p-3 rounded-2xl hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 transition-all duration-300 transform hover:scale-110 hover:shadow-lg"
-          >
-            <ChevronRightIcon className="h-8 w-8 text-purple-600 group-hover:animate-bounce" />
-          </button>
         </div>
 
         {/* Month Summary - Shows event statistics and busy days */}
-        <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 shadow-lg border-2 border-green-200">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-lg font-bold text-green-800 flex items-center">
-              📊 {monthNames[currentDate.getMonth()]} Summary
-              <span className="ml-2 text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                Event Overview
-              </span>
-            </h4>
+        <div className="card-gradient bg-gradient-to-r from-teal-500 to-coral-500 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h4 className="text-xl font-bold text-white">
+                {monthNames[currentDate.getMonth()]} Summary
+                <span className="ml-3 text-sm bg-white/20 text-white px-3 py-1 rounded-full">
+                  Event Overview
+                </span>
+              </h4>
+            </div>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Total Events */}
-            <div className="bg-white p-3 rounded-xl border border-green-200 text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-center">
+              <div className="text-3xl font-bold text-white">
                 {events.filter(event => {
                   const eventDate = new Date(event.startTime);
                   return eventDate.getMonth() === currentDate.getMonth() && 
                          eventDate.getFullYear() === currentDate.getFullYear();
                 }).length}
               </div>
-              <div className="text-sm text-green-700 font-semibold">Total Events</div>
+              <div className="text-sm text-white/90 font-semibold">Total Events</div>
             </div>
             
             {/* Days with Events */}
-            <div className="bg-white p-3 rounded-xl border border-green-200 text-center">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-center">
+              <div className="text-3xl font-bold text-white">
                 {(() => {
                   const daysWithEvents = new Set(events
                     .filter(event => {
@@ -393,12 +458,12 @@ const Calendar = () => {
                   return daysWithEvents.size;
                 })()}
               </div>
-              <div className="text-sm text-blue-700 font-semibold">Busy Days</div>
+              <div className="text-sm text-white/90 font-semibold">Busy Days</div>
             </div>
             
             {/* Multiple Events Days */}
-            <div className="bg-white p-3 rounded-xl border border-green-200 text-center">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-center">
+              <div className="text-3xl font-bold text-white">
                 {(() => {
                   const dayEventCounts = {};
                   events.filter(event => {
@@ -412,12 +477,12 @@ const Calendar = () => {
                   return Object.values(dayEventCounts).filter(count => count > 1).length;
                 })()}
               </div>
-              <div className="text-sm text-purple-700 font-semibold">Multi-Event Days</div>
+              <div className="text-sm text-white/90 font-semibold">Multi-Event Days</div>
             </div>
             
             {/* Event Types */}
-            <div className="bg-white p-3 rounded-xl border border-green-200 text-center">
-              <div className="text-2xl font-bold text-pink-600">
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-center">
+              <div className="text-3xl font-bold text-white">
                 {(() => {
                   const eventTypes = new Set(events
                     .filter(event => {
@@ -430,7 +495,7 @@ const Calendar = () => {
                   return eventTypes.size;
                 })()}
               </div>
-              <div className="text-sm text-pink-700 font-semibold">Event Types</div>
+              <div className="text-sm text-white/90 font-semibold">Event Types</div>
             </div>
           </div>
           
@@ -533,20 +598,25 @@ const Calendar = () => {
         </div>
 
         {/* Upcoming Events Widget - Shows events from next 30 days */}
-        <div className="mb-8 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-3xl p-6 shadow-xl border-2 border-purple-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center">
-              🔮 Upcoming Events
-              <span className="ml-2 text-sm bg-purple-100 text-purple-600 px-3 py-1 rounded-full">
-                Next 30 Days
-              </span>
-            </h3>
+        <div className="card-gradient bg-gradient-to-r from-purple-500 to-yellow-500 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <span className="text-2xl">🔮</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white flex items-center">
+                Upcoming Events
+                <span className="ml-3 text-sm bg-white/20 text-white px-3 py-1 rounded-full">
+                  Next 30 Days
+                </span>
+              </h3>
+            </div>
             <button
               onClick={() => {
                 // Show upcoming events in a modal or expand the widget
                 setView('upcoming');
               }}
-              className="text-purple-600 hover:text-purple-800 font-semibold hover:underline transition-colors"
+              className="text-white/90 hover:text-white font-semibold hover:underline transition-colors"
             >
               View All →
             </button>
@@ -568,7 +638,7 @@ const Calendar = () => {
                     setSelectedEvent(event);
                     setShowEventModal(true);
                   }}
-                  className="group bg-white p-4 rounded-2xl shadow-lg border-2 border-transparent hover:border-purple-300 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                  className="group bg-white/20 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-white/30 hover:border-white/50 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                 >
                   <div className="flex items-start space-x-3">
                     <div 
@@ -578,24 +648,31 @@ const Calendar = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-lg">{getEventTypeIcon(event.eventType)}</span>
-                        <h4 className="font-bold text-gray-900 truncate group-hover:text-purple-600 transition-colors">
+                        <h4 className="font-bold text-white truncate group-hover:text-yellow-200 transition-colors">
                           {event.title}
                         </h4>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                      <p className="text-sm text-white/80 mb-2 line-clamp-2">
                         {event.description || 'No description'}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-purple-600 font-semibold">
+                        <span className="text-xs text-yellow-200 font-semibold">
                           {new Date(event.startTime).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric',
                             weekday: 'short'
                           })}
                         </span>
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                          {event.eventType.replace('_', ' ')}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs bg-white/20 text-white px-2 py-1 rounded-full">
+                            {event.eventType.replace('_', ' ')}
+                          </span>
+                          {event.userId && (
+                            <span className="text-xs bg-white/20 text-white px-2 py-1 rounded-full">
+                              User {event.userId}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -620,22 +697,22 @@ const Calendar = () => {
           </div>
         </div>
 
-        {/* Fun Calendar Grid */}
+        {/* Calendar Grid */}
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="relative">
-              <div className="w-20 h-20 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+              <div className="w-20 h-20 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-coral-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
               <div className="mt-4 text-center">
-                <p className="text-xl font-bold text-purple-600 animate-pulse">Loading exciting events...</p>
-                <p className="text-purple-400">✨ Getting your calendar ready ✨</p>
+                <p className="text-xl font-bold text-teal-600 animate-pulse">Loading exciting events...</p>
+                <p className="text-coral-400">✨ Getting your calendar ready ✨</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-purple-100 transform hover:scale-[1.02] transition-transform duration-500">
-            {/* Fun Day Headers */}
-            <div className="grid grid-cols-7 gap-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500">
+          <div className="card shadow-2xl overflow-hidden border-2 border-teal-100 transform hover:scale-[1.02] transition-transform duration-500">
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 gap-1 bg-gradient-to-r from-teal-500 to-coral-500">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                 <div key={day} className="px-4 py-4 text-center">
                   <div className="text-white font-bold text-lg animate-pulse" style={{ animationDelay: `${index * 0.1}s` }}>
@@ -645,12 +722,17 @@ const Calendar = () => {
               ))}
             </div>
             
-            {/* Fun Calendar Days */}
-            <div className="grid grid-cols-7 gap-1 bg-gradient-to-br from-purple-50 to-pink-50">
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 gap-1 bg-gradient-to-br from-teal-50 to-coral-50">
               {monthData.map((date, index) => {
                 const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                 const isToday = date.toDateString() === new Date().toDateString();
                 const dayEvents = getEventsForDate(date);
+                
+                // Debug logging for events
+                if (dayEvents.length > 0) {
+                  console.log(`Events for ${date.toDateString()}:`, dayEvents);
+                }
                 
                 // Check if there are events in future months
                 const hasFutureEvents = events.some(event => {
@@ -666,7 +748,7 @@ const Calendar = () => {
                   >
                     <div className={`text-lg font-bold mb-2 transition-all duration-300 ${
                       isToday 
-                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg animate-bounce' 
+                        ? 'bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg animate-bounce' 
                         : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'
                     }`}>
                       {date.getDate()}
@@ -675,7 +757,7 @@ const Calendar = () => {
                     {/* Event Count Badge for Multiple Events */}
                     {dayEvents.length > 1 && (
                       <div className="absolute top-2 right-2">
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                        <div className="bg-gradient-to-r from-teal-500 to-coral-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
                           {dayEvents.length}
                         </div>
                       </div>
@@ -698,6 +780,11 @@ const Calendar = () => {
                               <span className="text-sm group-hover:animate-bounce">{getEventTypeIcon(event.eventType)}</span>
                               <span className="truncate group-hover:animate-pulse">{event.title}</span>
                             </div>
+                            {event.userId && (
+                              <div className="text-xs text-white/80 mt-1">
+                                User {event.userId}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -707,7 +794,7 @@ const Calendar = () => {
                         <div className="space-y-1">
                           {/* Show event count with fun styling */}
                           <div className="text-center">
-                            <div className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform duration-300"
+                            <div className="inline-block bg-gradient-to-r from-teal-400 to-coral-400 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform duration-300"
                                  onClick={() => {
                                    // Show all events for this day in a special modal
                                    setSelectedEvent({ 
@@ -740,7 +827,7 @@ const Calendar = () => {
                     {/* Future Events Indicator */}
                     {!isCurrentMonth && hasFutureEvents && (
                       <div className="mt-2 text-center">
-                        <div className="inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform duration-300"
+                        <div className="inline-block bg-gradient-to-r from-coral-400 to-coral-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform duration-300"
                              title="Click to see future events"
                              onClick={() => {
                                // Show future events modal
@@ -765,12 +852,12 @@ const Calendar = () => {
           </div>
         )}
 
-        {/* Fun Search Button */}
+        {/* Search Button */}
         {searchQuery.trim() && (
           <div className="mt-8 flex justify-center">
             <button
               onClick={searchEvents}
-              className="group px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white text-lg font-bold rounded-2xl hover:from-purple-600 hover:via-pink-600 hover:to-blue-600 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl animate-pulse"
+              className="btn-primary px-8 py-4 bg-gradient-to-r from-teal-500 to-coral-500 text-white text-lg font-bold rounded-2xl hover:from-teal-600 hover:to-coral-600 focus:outline-none focus:ring-4 focus:ring-teal-200 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl animate-pulse"
             >
               🔍 Search Events
             </button>
@@ -790,11 +877,11 @@ const Calendar = () => {
           if (futureEvents.length === 0) return null;
           
           return (
-            <div className="mt-8 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-6 shadow-xl border-2 border-indigo-200">
+            <div className="card-gradient bg-gradient-to-r from-purple-500 to-yellow-500 mt-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+                <h3 className="text-2xl font-bold text-white flex items-center">
                   🌟 Future Events Beyond {monthNames[currentDate.getMonth()]}
-                  <span className="ml-2 text-sm bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full">
+                  <span className="ml-3 text-sm bg-white/20 text-white px-3 py-1 rounded-full">
                     {futureEvents.length} events
                   </span>
                 </h3>
@@ -808,7 +895,7 @@ const Calendar = () => {
                       setSelectedEvent(event);
                       setShowEventModal(true);
                     }}
-                    className="group bg-white p-4 rounded-2xl shadow-lg border-2 border-transparent hover:border-indigo-300 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                    className="group bg-white/20 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-white/30 hover:border-white/50 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                   >
                     <div className="flex items-start space-x-3">
                       <div 
@@ -818,22 +905,22 @@ const Calendar = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-2">
                           <span className="text-lg">{getEventTypeIcon(event.eventType)}</span>
-                          <h4 className="font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                          <h4 className="font-bold text-white truncate group-hover:text-yellow-200 transition-colors">
                             {event.title}
                           </h4>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        <p className="text-sm text-white/80 mb-2 line-clamp-2">
                           {event.description || 'No description'}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-indigo-600 font-semibold">
+                          <span className="text-xs text-yellow-200 font-semibold">
                             {new Date(event.startTime).toLocaleDateString('en-US', { 
                               month: 'short', 
                               day: 'numeric',
                               year: 'numeric'
                             })}
                           </span>
-                          <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-white/20 text-white px-2 py-1 rounded-full">
                             {event.eventType.replace('_', ' ')}
                           </span>
                         </div>
@@ -850,7 +937,7 @@ const Calendar = () => {
                         const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
                         setCurrentDate(nextMonth);
                       }}
-                      className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                      className="btn-primary px-6 py-3 bg-gradient-to-r from-teal-500 to-coral-500 text-white font-bold rounded-xl hover:from-teal-600 hover:to-coral-600 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                     >
                       🚀 View More Future Events
                     </button>
@@ -864,10 +951,10 @@ const Calendar = () => {
         {/* Fun Event Details Modal */}
         {showEventModal && selectedEvent && (
           <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-6 border-0 w-[600px] shadow-2xl rounded-3xl bg-gradient-to-br from-white via-purple-50 to-pink-50 border-2 border-purple-200">
+            <div className="relative top-20 mx-auto p-6 border-0 w-[600px] shadow-2xl rounded-3xl bg-gradient-to-br from-white via-teal-50 to-coral-50 border-2 border-teal-200">
               <div className="mt-3">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-coral-600 bg-clip-text text-transparent">
                     {selectedEvent.isMultiEvent ? (
                       <span>📅 {selectedEvent.title}</span>
                     ) : (
@@ -876,7 +963,7 @@ const Calendar = () => {
                   </h3>
                   <button
                     onClick={() => setShowEventModal(false)}
-                    className="text-purple-400 hover:text-purple-600 p-2 rounded-full hover:bg-purple-100 transition-all duration-300 transform hover:scale-110"
+                    className="text-teal-400 hover:text-teal-600 p-2 rounded-full hover:bg-teal-100 transition-all duration-300 transform hover:scale-110"
                   >
                     ✕
                   </button>
@@ -885,7 +972,7 @@ const Calendar = () => {
                 {selectedEvent.isMultiEvent ? (
                   /* Multi-Event View */
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-l-4 border-purple-500">
+                    <div className="bg-gradient-to-r from-teal-50 to-coral-50 p-4 rounded-2xl border-l-4 border-teal-500">
                       <p className="text-gray-800 text-lg font-semibold">
                         {selectedEvent.description}
                       </p>
@@ -895,7 +982,7 @@ const Calendar = () => {
                       {selectedEvent.events.map((event, index) => (
                         <div
                           key={event.id || index}
-                          className="bg-white p-4 rounded-xl border-2 border-gray-100 hover:border-purple-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg cursor-pointer"
+                          className="bg-white p-4 rounded-xl border-2 border-gray-100 hover:border-teal-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg cursor-pointer"
                           onClick={() => {
                             // Show individual event details
                             setSelectedEvent(event);
@@ -909,7 +996,7 @@ const Calendar = () => {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
                                 <span className="text-xl">{getEventTypeIcon(event.eventType)}</span>
-                                <h4 className="font-bold text-gray-900 hover:text-purple-600 transition-colors">
+                                <h4 className="font-bold text-gray-900 hover:text-teal-600 transition-colors">
                                   {event.title}
                                 </h4>
                               </div>
@@ -922,7 +1009,7 @@ const Calendar = () => {
                               
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-purple-600 font-semibold">⏰ Start:</span>
+                                  <span className="text-teal-600 font-semibold">⏰ Start:</span>
                                   <span className="text-gray-700">
                                     {new Date(event.startTime).toLocaleTimeString('en-US', { 
                                       hour: '2-digit', 
@@ -933,7 +1020,7 @@ const Calendar = () => {
                                 </div>
                                 
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-purple-600 font-semibold">🏁 End:</span>
+                                  <span className="text-teal-600 font-semibold">🏁 End:</span>
                                   <span className="text-gray-700">
                                     {new Date(event.endTime).toLocaleTimeString('en-US', { 
                                       hour: '2-digit', 
@@ -944,15 +1031,15 @@ const Calendar = () => {
                                 </div>
                                 
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-purple-600 font-semibold">🎯 Type:</span>
-                                  <span className="text-gray-700 bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+                                  <span className="text-teal-600 font-semibold">🎯 Type:</span>
+                                  <span className="text-gray-700 bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs">
                                     {event.eventType.replace('_', ' ')}
                                   </span>
                                 </div>
                                 
                                 {event.location && (
                                   <div className="flex items-center space-x-2">
-                                    <span className="text-purple-600 font-semibold">📍 Location:</span>
+                                    <span className="text-teal-600 font-semibold">📍 Location:</span>
                                     <span className="text-gray-700">{event.location}</span>
                                   </div>
                                 )}
@@ -966,7 +1053,7 @@ const Calendar = () => {
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => setShowEventModal(false)}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                        className="btn-primary bg-gradient-to-r from-teal-500 to-coral-500 hover:from-teal-600 hover:to-coral-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                       >
                         ✨ Close ✨
                       </button>
@@ -975,14 +1062,14 @@ const Calendar = () => {
                 ) : (
                   /* Single Event View */
                   <div className="space-y-6">
-                    {/* Fun Description Section */}
+                    {/* Description Section */}
                     {selectedEvent.description ? (
                       <div className="group">
-                        <h4 className="text-lg font-bold text-purple-700 mb-3 flex items-center">
+                        <h4 className="text-lg font-bold text-teal-700 mb-3 flex items-center">
                           📝 Description
-                          <span className="ml-2 text-sm bg-purple-100 text-purple-600 px-2 py-1 rounded-full">✨</span>
+                          <span className="ml-2 text-sm bg-teal-100 text-teal-600 px-2 py-1 rounded-full">✨</span>
                         </h4>
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-l-4 border-purple-500 shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                        <div className="bg-gradient-to-r from-teal-50 to-coral-50 p-4 rounded-2xl border-l-4 border-teal-500 shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                           <p className="text-gray-800 text-lg leading-relaxed">
                             {selectedEvent.description}
                           </p>
@@ -996,36 +1083,36 @@ const Calendar = () => {
                       </div>
                     )}
                     
-                    {/* Fun Event Details */}
+                    {/* Event Details */}
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-200">
-                          <span className="text-sm font-bold text-blue-700">🎯 Event Type</span>
-                          <div className="text-blue-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
+                        <div className="bg-gradient-to-r from-teal-50 to-coral-50 p-3 rounded-xl border border-teal-200">
+                          <span className="text-sm font-bold text-teal-700">🎯 Event Type</span>
+                          <div className="text-teal-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
                             {selectedEvent.eventType.replace('_', ' ')}
                           </div>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-xl border border-green-200">
-                          <span className="text-sm font-bold text-green-700">⏰ Start Time</span>
-                          <div className="text-green-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
+                        <div className="bg-gradient-to-r from-coral-50 to-yellow-50 p-3 rounded-xl border border-coral-200">
+                          <span className="text-sm font-bold text-coral-700">⏰ Start Time</span>
+                          <div className="text-coral-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
                             {new Date(selectedEvent.startTime).toLocaleString()}
                           </div>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-xl border border-purple-200">
-                          <span className="text-sm font-bold text-purple-700">🏁 End Time</span>
-                          <div className="text-purple-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
+                        <div className="bg-gradient-to-r from-teal-50 to-coral-50 p-3 rounded-xl border border-teal-200">
+                          <span className="text-sm font-bold text-teal-700">🏁 End Time</span>
+                          <div className="text-teal-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
                             {new Date(selectedEvent.endTime).toLocaleString()}
                           </div>
                         </div>
                         
                         {selectedEvent.location && (
-                          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-3 rounded-xl border border-yellow-200">
-                            <span className="text-sm font-bold text-yellow-700">📍 Location</span>
-                            <div className="text-yellow-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
+                          <div className="bg-gradient-to-r from-coral-50 to-yellow-50 p-3 rounded-xl border border-coral-200">
+                            <span className="text-sm font-bold text-coral-700">📍 Location</span>
+                            <div className="text-coral-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold">
                               {selectedEvent.location}
                             </div>
                           </div>
@@ -1042,9 +1129,9 @@ const Calendar = () => {
                       )}
                       
                       {selectedEvent.recurring && (
-                        <div className="bg-gradient-to-r from-blue-100 to-indigo-100 p-3 rounded-xl border border-blue-300">
-                          <span className="text-sm font-bold text-blue-700">🔄 Recurring</span>
-                          <div className="text-blue-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold animate-pulse">
+                        <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-3 rounded-xl border border-purple-300">
+                          <span className="text-sm font-bold text-purple-700">🔄 Recurring</span>
+                          <div className="text-purple-900 bg-white px-3 py-1 rounded-lg mt-1 font-semibold animate-pulse">
                             {selectedEvent.recurrencePattern || '🔄 Recurring Event 🔄'}
                           </div>
                         </div>
@@ -1054,7 +1141,7 @@ const Calendar = () => {
                     <div className="mt-8 flex justify-end">
                       <button
                         onClick={() => setShowEventModal(false)}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                        className="btn-primary bg-gradient-to-r from-teal-500 to-coral-500 hover:from-teal-600 hover:to-coral-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                       >
                         ✨ Close ✨
                       </button>
@@ -1069,15 +1156,15 @@ const Calendar = () => {
         {/* Fun Add Event Modal - Only for Teachers and Admins */}
         {showAddEventModal && canAddEvents && (
           <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-6 border-0 w-[500px] shadow-2xl rounded-3xl bg-gradient-to-br from-white via-blue-50 to-purple-50 border-2 border-blue-200">
+            <div className="relative top-20 mx-auto p-6 border-0 w-[500px] shadow-2xl rounded-3xl bg-gradient-to-br from-white via-teal-50 to-coral-50 border-2 border-teal-200">
               <div className="mt-3">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-coral-600 bg-clip-text text-transparent">
                     ✨ Add New Event ✨
                   </h3>
                   <button
                     onClick={() => setShowAddEventModal(false)}
-                    className="text-blue-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-100 transition-all duration-300 transform hover:scale-110"
+                    className="text-teal-400 hover:text-teal-600 p-2 rounded-full hover:bg-teal-100 transition-all duration-300 transform hover:scale-110"
                   >
                     ✕
                   </button>
@@ -1085,61 +1172,61 @@ const Calendar = () => {
                 
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">🎯 Event Title</label>
+                    <label className="block text-sm font-bold text-teal-700 mb-2">🎯 Event Title</label>
                     <input
                       type="text"
                       name="title"
                       value={newEvent.title}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 text-lg transition-all duration-300 transform focus:scale-105"
+                      className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 text-lg transition-all duration-300 transform focus:scale-105"
                       placeholder="Enter exciting event title..."
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">📝 Description</label>
+                    <label className="block text-sm font-bold text-teal-700 mb-2">📝 Description</label>
                     <textarea
                       name="description"
                       value={newEvent.description}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 text-lg transition-all duration-300 transform focus:scale-105"
+                      className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 text-lg transition-all duration-300 transform focus:scale-105"
                       placeholder="Describe your amazing event..."
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-blue-700 mb-2">🚀 Start Time</label>
+                      <label className="block text-sm font-bold text-teal-700 mb-2">🚀 Start Time</label>
                       <input
                         type="datetime-local"
                         name="startTime"
                         value={newEvent.startTime}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 transform focus:scale-105"
+                        className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 transform focus:scale-105"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-bold text-blue-700 mb-2">🏁 End Time</label>
+                      <label className="block text-sm font-bold text-teal-700 mb-2">🏁 End Time</label>
                       <input
                         type="datetime-local"
                         name="endTime"
                         value={newEvent.endTime}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 transform focus:scale-105"
+                        className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 transform focus:scale-105"
                       />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-blue-700 mb-2">🎨 Event Type</label>
+                      <label className="block text-sm font-bold text-teal-700 mb-2">🎨 Event Type</label>
                       <select
                         name="eventType"
                         value={newEvent.eventType}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 transform focus:scale-105"
+                        className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 transform focus:scale-105"
                       >
                         <option value="CUSTOM">✨ Custom</option>
                         <option value="CLASS_SESSION">🏫 Class Session</option>
@@ -1151,27 +1238,58 @@ const Calendar = () => {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-bold text-blue-700 mb-2">🎨 Color</label>
+                      <label className="block text-sm font-bold text-teal-700 mb-2">🎨 Color</label>
                       <input
                         type="color"
                         name="color"
                         value={newEvent.color}
                         onChange={handleInputChange}
-                        className="w-full h-12 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 transform focus:scale-105"
+                        className="input-field w-full h-12 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 transform focus:scale-105"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">📍 Location</label>
+                    <label className="block text-sm font-bold text-teal-700 mb-2">📍 Location</label>
                     <input
                       type="text"
                       name="location"
                       value={newEvent.location}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 text-lg transition-all duration-300 transform focus:scale-105"
+                      className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 text-lg transition-all duration-300 transform focus:scale-105"
                       placeholder="Where's the event happening?"
                     />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="recurring"
+                        checked={newEvent.recurring}
+                        onChange={handleInputChange}
+                        className="h-5 w-5 text-teal-600 focus:ring-4 focus:ring-teal-200 border-teal-300 rounded-lg transition-all duration-300"
+                      />
+                      <label className="ml-3 block text-lg font-bold text-teal-700">🔄 Recurring Event</label>
+                    </div>
+                    
+                    {newEvent.recurring && (
+                      <div>
+                        <label className="block text-sm font-bold text-teal-700 mb-2">🔄 Recurrence Pattern</label>
+                        <select
+                          name="recurrencePattern"
+                          value={newEvent.recurrencePattern || ''}
+                          onChange={handleInputChange}
+                          className="input-field w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all duration-300 transform focus:scale-105"
+                        >
+                          <option value="">Select Pattern</option>
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="YEARLY">Yearly</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center">
@@ -1180,23 +1298,23 @@ const Calendar = () => {
                       name="allDay"
                       checked={newEvent.allDay}
                       onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 focus:ring-4 focus:ring-blue-200 border-blue-300 rounded-lg transition-all duration-300"
+                      className="h-5 w-5 text-teal-600 focus:ring-4 focus:ring-teal-200 border-teal-300 rounded-lg transition-all duration-300"
                     />
-                    <label className="ml-3 block text-lg font-bold text-blue-700">🌟 All day event</label>
+                    <label className="ml-3 block text-lg font-bold text-teal-700">🌟 All day event</label>
                   </div>
                 </div>
                 
                 <div className="mt-8 flex justify-end space-x-4">
                   <button
                     onClick={() => setShowAddEventModal(false)}
-                    className="px-6 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-400 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                    className="btn-secondary bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
                   >
                     ❌ Cancel
                   </button>
                   <button
                     onClick={createEvent}
                     disabled={loading || !newEvent.title || !newEvent.startTime}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="btn-primary bg-gradient-to-r from-teal-500 to-coral-500 hover:from-teal-600 hover:to-coral-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {loading ? '✨ Creating... ✨' : '🚀 Create Event 🚀'}
                   </button>

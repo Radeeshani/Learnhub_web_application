@@ -1,8 +1,8 @@
 @echo off
-REM EduBuddy Startup Script for Windows
+REM LearnHub Startup Script for Windows
 REM This script starts both the backend and frontend services
 
-echo 🚀 Starting EduBuddy...
+echo 🚀 Starting LearnHub...
 
 REM Check if Java is installed
 java -version >nul 2>&1
@@ -106,7 +106,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo 🎉 EduBuddy is now running!
+echo 🎉 LearnHub is now running!
 echo.
 echo 📍 Backend: http://localhost:8080/api
 echo 📍 Frontend: http://localhost:5173

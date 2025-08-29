@@ -35,20 +35,20 @@ const Header = () => {
   };
 
   const getNavigationItems = () => {
-    const baseItems = [
-      {
-        name: 'Calendar',
-        href: '/calendar',
-        icon: CalendarIcon,
-        roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
-      },
-      {
-        name: 'Gamification',
-        href: '/gamification',
-        icon: TrophyIcon,
-        roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
-      }
-    ];
+         const baseItems = [
+       {
+         name: 'Calendar',
+         href: '/calendar',
+         icon: CalendarIcon,
+         roles: ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']
+       },
+       {
+         name: 'Gamification',
+         href: '/gamification',
+         icon: TrophyIcon,
+         roles: ['STUDENT', 'PARENT']
+       }
+     ];
 
     if (user?.role === 'TEACHER' || user?.role === 'ADMIN') {
       baseItems.push(
@@ -89,7 +89,7 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
             <h1 className="text-xl font-semibold text-gray-900">
-              EduBuddy
+              LearnHub
             </h1>
           </div>
           
@@ -174,7 +174,7 @@ const Header = () => {
               <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                 {user?.profilePicture ? (
                   <img
-                    src={`http://localhost:8080/api/profile-pictures/${user.profilePicture}`}
+                    src={`/api/profile-pictures/${user.profilePicture}`}
                     alt="Profile"
                     className="w-full h-full object-cover"
                     onError={(e) => {

@@ -8,6 +8,9 @@ import com.homework.repository.UserRepository;
 import com.homework.repository.HomeworkRepository;
 import com.homework.dto.HomeworkSubmissionRequest;
 import com.homework.dto.HomeworkSubmissionResponse;
+import com.homework.service.GamificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class HomeworkSubmissionService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(HomeworkSubmissionService.class);
     
     @Autowired
     private HomeworkSubmissionRepository submissionRepository;
@@ -31,7 +36,17 @@ public class HomeworkSubmissionService {
     @Autowired
     private NotificationService notificationService;
     
+    @Autowired
+    private GamificationService gamificationService;
+    
     public HomeworkSubmissionResponse submitHomework(HomeworkSubmissionRequest request, String studentEmail) {
+        logger.debug("Received homework submission request: homeworkId={}, submissionType={}, hasText={}, hasAudio={}, hasImage={}, hasPdf={}", 
+                   request.getHomeworkId(), request.getSubmissionType(), 
+                   request.getSubmissionText() != null && !request.getSubmissionText().isEmpty(),
+                   request.getAudioData() != null && !request.getAudioData().isEmpty(),
+                   request.getImageData() != null && !request.getImageData().isEmpty(),
+                   request.getPdfData() != null && !request.getPdfData().isEmpty());
+        
         // Find student by email
         User student = userRepository.findByEmail(studentEmail)
             .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -50,34 +65,54 @@ public class HomeworkSubmissionService {
         String attachmentName = null;
         HomeworkSubmission.SubmissionType submissionType = null;
         
-        if (request.getSubmissionText() != null && !request.getSubmissionText().isEmpty()) {
-            submissionType = HomeworkSubmission.SubmissionType.TEXT;
-        } else if (request.getAudioData() != null && !request.getAudioData().isEmpty()) {
-            attachmentUrl = "voice_recording.wav";
-            attachmentName = "voice_recording.wav";
-            submissionType = HomeworkSubmission.SubmissionType.VOICE;
-        } else if (request.getPhotoUrl() != null && !request.getPhotoUrl().isEmpty()) {
-            attachmentUrl = request.getPhotoUrl();
-            attachmentName = "submission_photo.jpg";
-            submissionType = HomeworkSubmission.SubmissionType.PHOTO;
-            
-            // If image data is provided, store it
-            if (request.getImageData() != null && !request.getImageData().isEmpty()) {
-                // The image data is already base64 encoded from the frontend
-                // Just store it as is
+        // First try to use the submission type provided by the frontend
+        if (request.getSubmissionType() != null && !request.getSubmissionType().isEmpty()) {
+            try {
+                submissionType = HomeworkSubmission.SubmissionType.valueOf(request.getSubmissionType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                logger.warn("Invalid submission type provided: {}, will determine from content", request.getSubmissionType());
             }
-        } else if (request.getPdfUrl() != null && !request.getPdfUrl().isEmpty()) {
-            attachmentUrl = request.getPdfUrl();
-            attachmentName = "submission.pdf";
-            submissionType = HomeworkSubmission.SubmissionType.PDF;
-            
-            // If PDF data is provided, store it
-            if (request.getPdfData() != null && !request.getPdfData().isEmpty()) {
-                // The PDF data is already base64 encoded from the frontend
-                // Just store it as is
+        }
+        
+        // If no valid submission type was provided, determine from content
+        if (submissionType == null) {
+            if (request.getSubmissionText() != null && !request.getSubmissionText().isEmpty()) {
+                submissionType = HomeworkSubmission.SubmissionType.TEXT;
+            } else if (request.getAudioData() != null && !request.getAudioData().isEmpty()) {
+                attachmentUrl = "voice_recording.wav";
+                attachmentName = "voice_recording.wav";
+                submissionType = HomeworkSubmission.SubmissionType.VOICE;
+            } else if (request.getImageData() != null && !request.getImageData().isEmpty()) {
+                attachmentUrl = "submission_photo.jpg";
+                attachmentName = "submission_photo.jpg";
+                submissionType = HomeworkSubmission.SubmissionType.PHOTO;
+            } else if (request.getPdfData() != null && !request.getPdfData().isEmpty()) {
+                attachmentUrl = "submission.pdf";
+                attachmentName = "submission.pdf";
+                submissionType = HomeworkSubmission.SubmissionType.PDF;
+            } else {
+                throw new RuntimeException("No submission content provided");
             }
-        } else {
-            throw new RuntimeException("No submission content provided");
+        }
+        
+        // Set attachment details based on submission type if not already set
+        if (attachmentUrl == null) {
+            switch (submissionType) {
+                case VOICE:
+                    attachmentUrl = "voice_recording.wav";
+                    attachmentName = "voice_recording.wav";
+                    break;
+                case PHOTO:
+                    attachmentUrl = "submission_photo.jpg";
+                    attachmentName = "submission_photo.jpg";
+                    break;
+                case PDF:
+                    attachmentUrl = "submission.pdf";
+                    attachmentName = "submission.pdf";
+                    break;
+                default:
+                    break;
+            }
         }
         
         // Check if submission is late
@@ -94,7 +129,7 @@ public class HomeworkSubmissionService {
         submission.setImageData(request.getImageData()); // Store the image data
         submission.setPdfData(request.getPdfData()); // Store the PDF data
         submission.setSubmissionType(submissionType);
-        submission.setLate(isLate);
+        // Note: isLate field will be set by JPA/Hibernate based on the due date comparison
         submission.setStatus(HomeworkSubmission.SubmissionStatus.SUBMITTED);
         submission.setSubmittedAt(LocalDateTime.now());
         
@@ -103,6 +138,9 @@ public class HomeworkSubmissionService {
         
         // Create notification for teacher about new submission
         notificationService.createSubmissionNotification(savedSubmission, homework.getTitle());
+        
+        // Process gamification for homework submission
+        gamificationService.processHomeworkSubmission(savedSubmission);
         
         // Convert to response DTO
         return HomeworkSubmissionResponse.fromEntity(savedSubmission, student, homework);
@@ -132,19 +170,28 @@ public class HomeworkSubmissionService {
             submission.setSubmissionText(request.getSubmissionText());
         }
         
-        // Update audio data if provided
+        // Update audio data if provided - clear old data when new data is provided
         if (request.getAudioData() != null && !request.getAudioData().isEmpty()) {
             submission.setAudioData(request.getAudioData());
+            // Clear other attachment data when audio is provided
+            submission.setImageData(null);
+            submission.setPdfData(null);
         }
         
-        // Update image data if provided
+        // Update image data if provided - clear old data when new data is provided
         if (request.getImageData() != null && !request.getImageData().isEmpty()) {
             submission.setImageData(request.getImageData());
+            // Clear other attachment data when image is provided
+            submission.setAudioData(null);
+            submission.setPdfData(null);
         }
         
-        // Update PDF data if provided
+        // Update PDF data if provided - clear old data when new data is provided
         if (request.getPdfData() != null && !request.getPdfData().isEmpty()) {
             submission.setPdfData(request.getPdfData());
+            // Clear other attachment data when PDF is provided
+            submission.setAudioData(null);
+            submission.setImageData(null);
         }
         
         // Handle file updates
@@ -158,12 +205,12 @@ public class HomeworkSubmissionService {
             attachmentUrl = "voice_recording.wav";
             attachmentName = "voice_recording.wav";
             submissionType = HomeworkSubmission.SubmissionType.VOICE;
-        } else if (request.getPhotoUrl() != null && !request.getPhotoUrl().isEmpty()) {
-            attachmentUrl = request.getPhotoUrl();
+        } else if (request.getImageData() != null && !request.getImageData().isEmpty()) {
+            attachmentUrl = "submission_photo.jpg";
             attachmentName = "submission_photo.jpg";
             submissionType = HomeworkSubmission.SubmissionType.PHOTO;
-        } else if (request.getPdfUrl() != null && !request.getPdfUrl().isEmpty()) {
-            attachmentUrl = request.getPdfUrl();
+        } else if (request.getPdfData() != null && !request.getPdfData().isEmpty()) {
+            attachmentUrl = "submission.pdf";
             attachmentName = "submission.pdf";
             submissionType = HomeworkSubmission.SubmissionType.PDF;
         }
@@ -182,6 +229,11 @@ public class HomeworkSubmissionService {
         
         // Save updated submission
         HomeworkSubmission updatedSubmission = submissionRepository.save(submission);
+        
+        // Process gamification for homework update (if this is a new submission)
+        if (updatedSubmission.getStatus() == HomeworkSubmission.SubmissionStatus.SUBMITTED) {
+            gamificationService.processHomeworkSubmission(updatedSubmission);
+        }
         
         // Get homework details for response
         Homework homework = homeworkRepository.findById(submission.getHomeworkId())
@@ -218,6 +270,9 @@ public class HomeworkSubmissionService {
         
         // Create notification for student about grading
         notificationService.createGradedNotification(gradedSubmission, homework.getTitle());
+        
+        // Process gamification for homework grading
+        gamificationService.processHomeworkGrading(gradedSubmission);
         
         // Convert to response DTO
         return HomeworkSubmissionResponse.fromEntity(gradedSubmission, student, homework);

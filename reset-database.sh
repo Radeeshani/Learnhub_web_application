@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔄 Resetting EduBuddy Database..."
+echo "🔄 Resetting LearnHub Database..."
 echo "============================================="
 
 # Check if MySQL is accessible

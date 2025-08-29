@@ -2,11 +2,17 @@ package com.homework.service;
 
 import com.homework.dto.ClassRequest;
 import com.homework.dto.ClassResponse;
+import com.homework.dto.TeacherInfo;
+import com.homework.dto.StudentInfo;
 import com.homework.entity.Class;
 import com.homework.entity.User;
+import com.homework.entity.Enrollment;
+import com.homework.entity.Homework;
 import com.homework.enums.UserRole;
 import com.homework.repository.ClassRepository;
 import com.homework.repository.UserRepository;
+import com.homework.repository.EnrollmentRepository;
+import com.homework.repository.HomeworkRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +31,12 @@ public class ClassService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+    
+    @Autowired
+    private HomeworkRepository homeworkRepository;
     
     // Create a new class
     public ClassResponse createClass(ClassRequest request) {
@@ -117,12 +129,34 @@ public class ClassService {
                 .collect(Collectors.toList());
     }
     
+    // Get all classes for a teacher with statistics
+    public List<ClassResponse> getClassesByTeacherWithStatistics(Long teacherId) {
+        List<Class> classes = classRepository.findByTeacherIdAndIsActiveTrue(teacherId);
+        return classes.stream()
+                .map(cls -> {
+                    ClassResponse response = convertToResponse(cls);
+                    
+                    // Add statistics for each class
+                    long currentStudentCount = enrollmentRepository.countByClassEntityIdAndStatus(cls.getId(), Enrollment.EnrollmentStatus.ACTIVE);
+                    
+                    response.setCurrentStudentCount((int) currentStudentCount);
+                    
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+    
     // Get all classes for a student
     public List<ClassResponse> getClassesByStudent(Long studentId) {
         List<Class> classes = classRepository.findClassesByStudent(studentId);
         return classes.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+    
+    // Get student enrolled classes (alias for getClassesByStudent for API consistency)
+    public List<ClassResponse> getStudentEnrolledClasses(Long studentId) {
+        return getClassesByStudent(studentId);
     }
     
     // Get all active classes
@@ -188,16 +222,31 @@ public class ClassService {
         
         ClassResponse response = convertToResponse(classEntity);
         
-        // Add statistics
-        response.setCurrentStudentCount(classEntity.getEnrollments().size());
-        response.setTotalAssignments(classEntity.getAssignments().size());
+        // Add statistics using repository methods to avoid lazy loading issues
+        long currentStudentCount = enrollmentRepository.countByClassEntityIdAndStatus(classId, Enrollment.EnrollmentStatus.ACTIVE);
         
-        // Get recent assignments
-        List<String> recentAssignments = classEntity.getAssignments().stream()
-                .limit(5)
-                .map(assignment -> assignment.getTitle())
+        response.setCurrentStudentCount((int) currentStudentCount);
+        
+        // Get enrolled students information
+        List<Enrollment> activeEnrollments = enrollmentRepository.findByClassEntityIdAndStatus(classId, Enrollment.EnrollmentStatus.ACTIVE);
+        List<StudentInfo> enrolledStudents = activeEnrollments.stream().map(enrollment -> {
+            StudentInfo studentInfo = new StudentInfo();
+            studentInfo.setId(enrollment.getStudent().getId());
+            studentInfo.setFirstName(enrollment.getStudent().getFirstName());
+            studentInfo.setLastName(enrollment.getStudent().getLastName());
+            studentInfo.setEmail(enrollment.getStudent().getEmail());
+            studentInfo.setEnrollmentDate(enrollment.getEnrollmentDate());
+            studentInfo.setEnrollmentId(enrollment.getId());
+            return studentInfo;
+        }).collect(Collectors.toList());
+        response.setEnrolledStudents(enrolledStudents);
+        
+        // Get recent assignments using repository method
+        List<Homework> recentAssignments = homeworkRepository.findTop5ByClassIdOrderByCreatedAtDesc(classId);
+        List<String> recentAssignmentTitles = recentAssignments.stream()
+                .map(Homework::getTitle)
                 .collect(Collectors.toList());
-        response.setRecentAssignments(recentAssignments);
+        response.setRecentAssignments(recentAssignmentTitles);
         
         return response;
     }
@@ -224,6 +273,14 @@ public class ClassService {
             response.setTeacherId(classEntity.getTeacher().getId());
             response.setTeacherName(classEntity.getTeacher().getFirstName() + " " + classEntity.getTeacher().getLastName());
             response.setTeacherEmail(classEntity.getTeacher().getEmail());
+            
+            // Create TeacherInfo object for frontend compatibility
+            TeacherInfo teacherInfo = new TeacherInfo();
+            teacherInfo.setId(classEntity.getTeacher().getId());
+            teacherInfo.setFirstName(classEntity.getTeacher().getFirstName());
+            teacherInfo.setLastName(classEntity.getTeacher().getLastName());
+            teacherInfo.setEmail(classEntity.getTeacher().getEmail());
+            response.setTeacher(teacherInfo);
         }
         
         return response;

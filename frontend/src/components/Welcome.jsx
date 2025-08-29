@@ -21,7 +21,7 @@ const Welcome = () => {
           className="mb-12"
         >
           <h1 className="text-5xl md:text-6xl font-bold text-accent mb-6">
-            EduBuddy
+            LearnHub
           </h1>
           <p className="text-xl text-gray-600 mb-8">
             Your Learning Companion

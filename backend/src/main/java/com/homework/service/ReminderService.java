@@ -3,6 +3,7 @@ package com.homework.service;
 import com.homework.entity.Reminder;
 import com.homework.entity.Homework;
 import com.homework.entity.User;
+import com.homework.dto.ReminderResponse;
 import com.homework.repository.ReminderRepository;
 import com.homework.repository.HomeworkRepository;
 import com.homework.repository.UserRepository;
@@ -16,8 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class ReminderService {
@@ -37,204 +43,185 @@ public class ReminderService {
     private NotificationService notificationService;
     
     /**
-     * Create reminders for a new homework assignment
+     * Create a single, smart reminder for a homework assignment
+     * This prevents duplicate notifications and provides better UX
      */
     @Transactional
-    public void createHomeworkReminders(Homework homework) {
+    public void createSmartHomeworkReminder(Homework homework) {
         try {
             // Get all students in the grade
             List<User> students = userRepository.findByClassGrade(homework.getClassGrade());
             
             for (User student : students) {
                 if (student.getRole().toString().equals("STUDENT")) {
-                    createRemindersForStudent(homework, student);
+                    createSmartReminderForStudent(homework, student);
                 }
             }
             
-            logger.info("Created reminders for {} students for homework: {}", students.size(), homework.getTitle());
+            logger.info("Created smart reminders for {} students for homework: {}", students.size(), homework.getTitle());
         } catch (Exception e) {
-            logger.error("Error creating homework reminders", e);
+            logger.error("Error creating smart homework reminders", e);
         }
     }
     
     /**
-     * Create all reminder types for a student
+     * Create a single, intelligent reminder for a student
+     * This consolidates multiple reminder types into one smart notification
      */
-    private void createRemindersForStudent(Homework homework, User student) {
+    private void createSmartReminderForStudent(Homework homework, User student) {
         LocalDateTime dueDate = homework.getDueDate();
+        LocalDateTime now = LocalDateTime.now();
         
-        // Create 24-hour reminder
-        createReminder(homework, student, Reminder.ReminderType.DUE_SOON_24H, 
-                      dueDate.minus(24, ChronoUnit.HOURS), dueDate);
+        // Calculate time until due
+        long hoursUntilDue = ChronoUnit.HOURS.between(now, dueDate);
+        long minutesUntilDue = ChronoUnit.MINUTES.between(now, dueDate);
         
-        // Create 12-hour reminder
-        createReminder(homework, student, Reminder.ReminderType.DUE_SOON_12H, 
-                      dueDate.minus(12, ChronoUnit.HOURS), dueDate);
+        // Debug logging to see what's happening
+        logger.debug("Homework '{}' - Now: {}, Due: {}, Minutes until due: {}", 
+                   homework.getTitle(), now, dueDate, minutesUntilDue);
         
-        // Create 6-hour reminder
-        createReminder(homework, student, Reminder.ReminderType.DUE_SOON_6H, 
-                      dueDate.minus(6, ChronoUnit.HOURS), dueDate);
-        
-        // Create 1-hour reminder
-        createReminder(homework, student, Reminder.ReminderType.DUE_SOON_1H, 
-                      dueDate.minus(1, ChronoUnit.HOURS), dueDate);
-        
-        // Create overdue reminder (1 hour after due date)
-        createReminder(homework, student, Reminder.ReminderType.OVERDUE, 
-                      dueDate.plus(1, ChronoUnit.HOURS), dueDate);
-    }
-    
-    /**
-     * Create a single reminder
-     */
-    private void createReminder(Homework homework, User student, Reminder.ReminderType type, 
-                               LocalDateTime reminderTime, LocalDateTime dueDate) {
+        // Create reminders for ALL homework assignments, not just those due soon
+        // This ensures students can see all their homework and plan accordingly
         Reminder reminder = new Reminder();
         reminder.setHomework(homework);
         reminder.setUser(student);
-        reminder.setReminderType(type);
-        reminder.setReminderTime(reminderTime);
+        reminder.setReminderType(Reminder.ReminderType.SMART);
+        reminder.setReminderTime(now);
         reminder.setDueDate(dueDate);
-        reminder.setTitle(generateReminderTitle(type, homework));
-        reminder.setMessage(generateReminderMessage(type, homework));
+        
+        // Generate smart title and message based on time
+        Map<String, String> smartContent = generateSmartReminderContent(homework, hoursUntilDue, minutesUntilDue);
+        reminder.setTitle(smartContent.get("title"));
+        reminder.setMessage(smartContent.get("message"));
         reminder.setStatus(Reminder.ReminderStatus.PENDING);
         reminder.setRead(false);
         
-        reminderRepository.save(reminder);
-    }
-    
-    /**
-     * Generate reminder title based on type
-     */
-    private String generateReminderTitle(Reminder.ReminderType type, Homework homework) {
-        switch (type) {
-            case DUE_SOON_24H:
-                return "Homework Due Tomorrow: " + homework.getTitle();
-            case DUE_SOON_12H:
-                return "Homework Due in 12 Hours: " + homework.getTitle();
-            case DUE_SOON_6H:
-                return "Homework Due in 6 Hours: " + homework.getTitle();
-            case DUE_SOON_1H:
-                return "Homework Due in 1 Hour: " + homework.getTitle();
-            case OVERDUE:
-                return "Homework Overdue: " + homework.getTitle();
-            default:
-                return "Homework Reminder: " + homework.getTitle();
+        // Set priority based on urgency
+        if (minutesUntilDue < 0) {
+            // Overdue
+            reminder.setPriority(com.homework.entity.Notification.NotificationPriority.URGENT);
+        } else if (minutesUntilDue < 60) {
+            // Due within 1 hour
+            reminder.setPriority(com.homework.entity.Notification.NotificationPriority.HIGH);
+        } else if (minutesUntilDue < 360) {
+            // Due within 6 hours
+            reminder.setPriority(com.homework.entity.Notification.NotificationPriority.HIGH);
+        } else if (minutesUntilDue < 1440) {
+            // Due within 24 hours
+            reminder.setPriority(com.homework.entity.Notification.NotificationPriority.NORMAL);
+        } else {
+            // Due in more than 24 hours - still important for planning
+            reminder.setPriority(com.homework.entity.Notification.NotificationPriority.LOW);
         }
+        
+        reminderRepository.save(reminder);
+        logger.debug("Created reminder for student {} for homework '{}'", student.getEmail(), homework.getTitle());
     }
     
     /**
-     * Generate reminder message based on type
+     * Generate intelligent reminder content based on time until due
      */
-    private String generateReminderMessage(Reminder.ReminderType type, Homework homework) {
+    private Map<String, String> generateSmartReminderContent(Homework homework, long hoursUntilDue, long minutesUntilDue) {
+        Map<String, String> content = new HashMap<>();
         String subject = homework.getSubject();
         String grade = homework.getClassGrade();
-        String dueDateStr = homework.getDueDate().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"));
+        String title = homework.getTitle();
         
-        switch (type) {
-            case DUE_SOON_24H:
-                return String.format("Your %s homework for %s is due tomorrow at %s. Please complete it soon!", 
-                                   subject, grade, dueDateStr);
-            case DUE_SOON_12H:
-                return String.format("Your %s homework for %s is due in 12 hours at %s. Time to finish up!", 
-                                   subject, grade, dueDateStr);
-            case DUE_SOON_6H:
-                return String.format("Your %s homework for %s is due in 6 hours at %s. Don't wait too long!", 
-                                   subject, grade, dueDateStr);
-            case DUE_SOON_1H:
-                return String.format("Your %s homework for %s is due in 1 hour at %s. Submit now!", 
-                                   subject, grade, dueDateStr);
-            case OVERDUE:
-                return String.format("Your %s homework for %s was due at %s and is now overdue. Please submit as soon as possible!", 
-                                   subject, grade, dueDateStr);
-            default:
-                return String.format("Reminder: Your %s homework for %s is due at %s.", 
-                                   subject, grade, dueDateStr);
+        // Format due date for better readability
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm");
+        String formattedDueDate = homework.getDueDate().format(formatter);
+        
+        if (minutesUntilDue < 0) {
+            // Overdue - only if it's actually past the due date
+            long hoursOverdue = Math.abs(hoursUntilDue);
+            content.put("title", "Homework Overdue: " + title);
+            
+            if (hoursOverdue < 1) {
+                content.put("message", String.format(
+                    "Your %s homework for %s Grade was due at %s and is now overdue. Please submit as soon as possible!",
+                    subject, grade, formattedDueDate
+                ));
+            } else if (hoursOverdue < 24) {
+                content.put("message", String.format(
+                    "Your %s homework for %s Grade was due at %s and is now %d hour(s) overdue. Please submit immediately!",
+                    subject, grade, formattedDueDate, hoursOverdue
+                ));
+            } else {
+                long daysOverdue = hoursOverdue / 24;
+                content.put("message", String.format(
+                    "Your %s homework for %s Grade was due at %s and is now %d day(s) overdue. This needs immediate attention!",
+                    subject, grade, formattedDueDate, daysOverdue
+                ));
+            }
+        } else if (minutesUntilDue < 60) {
+            // Due within 1 hour
+            content.put("title", "Homework Due in Less Than 1 Hour: " + title);
+            content.put("message", String.format(
+                "Your %s homework for %s Grade is due in less than 1 hour at %s. Submit now to avoid being late!",
+                subject, grade, formattedDueDate
+            ));
+        } else if (hoursUntilDue < 6) {
+            // Due within 6 hours
+            content.put("title", "Homework Due in " + hoursUntilDue + " Hours: " + title);
+            content.put("message", String.format(
+                "Your %s homework for %s Grade is due in %d hour(s) at %s. Time to finish up!",
+                subject, grade, hoursUntilDue, formattedDueDate
+            ));
+        } else if (hoursUntilDue < 24) {
+            // Due within 24 hours
+            content.put("title", "Homework Due Tomorrow: " + title);
+            content.put("message", String.format(
+                "Your %s homework for %s Grade is due tomorrow at %s. Don't forget to complete it!",
+                subject, grade, formattedDueDate
+            ));
+        } else {
+            // Due in more than 24 hours
+            long daysUntilDue = hoursUntilDue / 24;
+            content.put("title", "Homework Due in " + daysUntilDue + " Days: " + title);
+            content.put("message", String.format(
+                "Your %s homework for %s Grade is due in %d day(s) at %s. Plan your time wisely!",
+                subject, grade, daysUntilDue, formattedDueDate
+            ));
         }
+        
+        return content;
     }
     
     /**
-     * Create a custom reminder for a student
+     * Scheduled task to process pending reminders every 5 minutes
+     * This reduces system load while still being responsive
      */
-    @Transactional
-    public Reminder createCustomReminder(Long userId, Long homeworkId, String reminderType, String customTime) {
-        try {
-            User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-            
-            Homework homework = homeworkRepository.findById(homeworkId)
-                .orElseThrow(() -> new RuntimeException("Homework not found"));
-            
-            // Check if user is a student
-            if (!user.getRole().toString().equals("STUDENT")) {
-                throw new RuntimeException("Only students can create custom reminders");
-            }
-            
-            // Check if user is in the same grade as the homework
-            if (!user.getClassGrade().equals(homework.getClassGrade())) {
-                throw new RuntimeException("You can only create reminders for homework in your grade");
-            }
-            
-            // Check if reminder already exists for this homework and user
-            List<Reminder> existingReminders = reminderRepository.findByUserIdAndHomeworkId(userId, homeworkId);
-            if (!existingReminders.isEmpty()) {
-                throw new RuntimeException("Reminder already exists for this homework");
-            }
-            
-            LocalDateTime dueDate = homework.getDueDate();
-            LocalDateTime reminderTime;
-            
-            // Parse custom time if provided, otherwise use default 24 hours before
-            if (customTime != null && !customTime.isEmpty()) {
-                try {
-                    reminderTime = LocalDateTime.parse(customTime);
-                    // Ensure reminder time is before due date
-                    if (reminderTime.isAfter(dueDate)) {
-                        throw new RuntimeException("Reminder time must be before the due date");
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException("Invalid custom time format. Use ISO format (YYYY-MM-DDTHH:MM:SS)");
-                }
-            } else {
-                // Default to 24 hours before due date
-                reminderTime = dueDate.minus(24, ChronoUnit.HOURS);
-            }
-            
-            Reminder reminder = new Reminder();
-            reminder.setHomework(homework);
-            reminder.setUser(user);
-            reminder.setReminderType(Reminder.ReminderType.CUSTOM);
-            reminder.setReminderTime(reminderTime);
-            reminder.setDueDate(dueDate);
-            reminder.setTitle("Custom Reminder: " + homework.getTitle());
-            reminder.setMessage(String.format("Custom reminder for your %s homework due on %s", 
-                homework.getSubject(), dueDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))));
-            reminder.setStatus(Reminder.ReminderStatus.PENDING);
-            reminder.setRead(false);
-            
-            return reminderRepository.save(reminder);
-        } catch (Exception e) {
-            logger.error("Error creating custom reminder", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Scheduled task to process pending reminders every minute
-     */
-    @Scheduled(fixedRate = 60000) // Run every minute
+    @Scheduled(fixedRate = 300000) // Run every 5 minutes
     @Transactional
     public void processPendingReminders() {
         try {
             LocalDateTime now = LocalDateTime.now();
             List<Reminder> pendingReminders = reminderRepository.findPendingRemindersToSend(now);
             
-            for (Reminder reminder : pendingReminders) {
-                processReminder(reminder);
+            // Group reminders by user and homework to prevent duplicates
+            Map<String, List<Reminder>> groupedReminders = pendingReminders.stream()
+                .collect(Collectors.groupingBy(r -> r.getUser().getId() + "-" + r.getHomework().getId()));
+            
+            for (List<Reminder> userHomeworkReminders : groupedReminders.values()) {
+                // Only process the most recent reminder for each user-homework combination
+                Reminder mostRecentReminder = userHomeworkReminders.stream()
+                    .max((r1, r2) -> r1.getCreatedAt().compareTo(r2.getCreatedAt()))
+                    .orElse(null);
+                
+                if (mostRecentReminder != null) {
+                    processSmartReminder(mostRecentReminder);
+                    
+                    // Mark all reminders for this user-homework as sent to prevent duplicates
+                    userHomeworkReminders.forEach(r -> {
+                        r.setStatus(Reminder.ReminderStatus.SENT);
+                        reminderRepository.save(r);
+                    });
+                }
             }
             
             if (!pendingReminders.isEmpty()) {
-                logger.info("Processed {} pending reminders", pendingReminders.size());
+                logger.info("Processed {} pending reminders, sent {} unique notifications", 
+                           pendingReminders.size(), groupedReminders.size());
             }
         } catch (Exception e) {
             logger.error("Error processing pending reminders", e);
@@ -242,10 +229,13 @@ public class ReminderService {
     }
     
     /**
-     * Process a single reminder
+     * Process a single smart reminder
      */
-    private void processReminder(Reminder reminder) {
+    private void processSmartReminder(Reminder reminder) {
         try {
+            // Determine notification priority based on urgency
+            com.homework.entity.Notification.NotificationPriority priority = determinePriority(reminder);
+            
             // Create notification
             notificationService.createNotification(
                 reminder.getUser().getId(),
@@ -254,88 +244,146 @@ public class ReminderService {
                 reminder.getMessage(),
                 reminder.getHomework().getId(),
                 reminder.getHomework().getTitle(),
-                com.homework.entity.Notification.NotificationPriority.HIGH
+                priority
             );
             
-            // Mark reminder as sent
-            reminder.setStatus(Reminder.ReminderStatus.SENT);
-            reminderRepository.save(reminder);
-            
-            logger.debug("Processed reminder {} for user {}", reminder.getId(), reminder.getUser().getEmail());
+            logger.debug("Processed smart reminder {} for user {}", reminder.getId(), reminder.getUser().getEmail());
         } catch (Exception e) {
-            logger.error("Error processing reminder {}", reminder.getId(), e);
+            logger.error("Error processing smart reminder {}", reminder.getId(), e);
             reminder.setStatus(Reminder.ReminderStatus.FAILED);
             reminderRepository.save(reminder);
         }
     }
     
     /**
-     * Get all reminders for a user
+     * Determine notification priority based on reminder urgency
      */
-    public List<Reminder> getUserReminders(Long userId) {
-        return reminderRepository.findByUserId(userId);
+    private com.homework.entity.Notification.NotificationPriority determinePriority(Reminder reminder) {
+        LocalDateTime now = LocalDateTime.now();
+        long minutesUntilDue = ChronoUnit.MINUTES.between(now, reminder.getDueDate());
+        
+        if (minutesUntilDue < 0) {
+            // Overdue
+            return com.homework.entity.Notification.NotificationPriority.URGENT;
+        } else if (minutesUntilDue < 60) {
+            // Due within 1 hour
+            return com.homework.entity.Notification.NotificationPriority.HIGH;
+        } else if (minutesUntilDue < 360) {
+            // Due within 6 hours
+            return com.homework.entity.Notification.NotificationPriority.HIGH;
+        } else if (minutesUntilDue < 1440) {
+            // Due within 24 hours
+            return com.homework.entity.Notification.NotificationPriority.NORMAL;
+        } else {
+            // Due in more than 24 hours - this shouldn't happen with our new logic
+            return com.homework.entity.Notification.NotificationPriority.LOW;
+        }
+    }
+    
+    /**
+     * Get all reminders for a user (for display purposes)
+     */
+    public List<ReminderResponse> getUserReminders(Long userId) {
+        List<Reminder> reminders = reminderRepository.findByUserId(userId);
+        return reminders.stream()
+                .map(ReminderResponse::new)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get all reminders for a user including both pending reminders and processed reminder notifications
+     * This provides a comprehensive view of all reminders regardless of processing status
+     */
+    public List<ReminderResponse> getUserRemindersWithNotifications(Long userId) {
+        List<ReminderResponse> allReminders = new ArrayList<>();
+        
+        // Get pending reminders
+        List<Reminder> pendingReminders = reminderRepository.findByUserId(userId);
+        allReminders.addAll(pendingReminders.stream()
+                .map(ReminderResponse::new)
+                .collect(Collectors.toList()));
+        
+        // Get processed reminder notifications
+        List<com.homework.entity.Notification> reminderNotifications = notificationService.getReminderNotificationsByUserId(userId);
+        allReminders.addAll(reminderNotifications.stream()
+                .map(this::convertNotificationToReminderResponse)
+                .collect(Collectors.toList()));
+        
+        // Sort by creation date (most recent first)
+        allReminders.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
+        
+        return allReminders;
     }
     
     /**
      * Get unread reminders for a user
      */
-    public List<Reminder> getUserUnreadReminders(Long userId) {
-        return reminderRepository.findUnreadByUserId(userId);
+    public List<ReminderResponse> getUserUnreadReminders(Long userId) {
+        List<Reminder> reminders = reminderRepository.findUnreadByUserId(userId);
+        return reminders.stream()
+                .map(ReminderResponse::new)
+                .collect(Collectors.toList());
     }
     
     /**
-     * Mark reminder as read
+     * Mark a reminder as read
      */
-    @Transactional
     public Reminder markReminderAsRead(Long reminderId) {
-        Optional<Reminder> reminderOpt = reminderRepository.findById(reminderId);
-        if (reminderOpt.isPresent()) {
-            Reminder reminder = reminderOpt.get();
-            reminder.setRead(true);
-            return reminderRepository.save(reminder);
-        }
-        return null;
+        Reminder reminder = reminderRepository.findById(reminderId)
+            .orElseThrow(() -> new RuntimeException("Reminder not found"));
+        
+        reminder.setRead(true);
+        reminder.setUpdatedAt(LocalDateTime.now());
+        return reminderRepository.save(reminder);
     }
     
     /**
      * Mark all reminders as read for a user
      */
-    @Transactional
     public void markAllRemindersAsRead(Long userId) {
         List<Reminder> unreadReminders = reminderRepository.findUnreadByUserId(userId);
-        for (Reminder reminder : unreadReminders) {
-            reminder.setRead(true);
-        }
+        unreadReminders.forEach(r -> {
+            r.setRead(true);
+            r.setUpdatedAt(LocalDateTime.now());
+        });
         reminderRepository.saveAll(unreadReminders);
     }
     
     /**
-     * Delete old sent reminders (cleanup)
+     * Clean up old sent reminders (run daily)
      */
-    @Scheduled(cron = "0 0 2 * * ?") // Run at 2 AM daily
-    @Transactional
+    @Scheduled(cron = "0 0 3 * * ?") // Run at 3 AM daily
     public void cleanupOldReminders() {
         try {
-            LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30); // Keep reminders for 30 days
-            reminderRepository.deleteOldSentReminders(cutoffDate);
-            logger.info("Cleaned up old sent reminders");
+            LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+            List<Reminder> oldReminders = reminderRepository.findByStatusAndCreatedAtBefore(
+                Reminder.ReminderStatus.SENT, sevenDaysAgo);
+            
+            if (!oldReminders.isEmpty()) {
+                reminderRepository.deleteAll(oldReminders);
+                logger.info("Cleaned up {} old sent reminders", oldReminders.size());
+            }
         } catch (Exception e) {
             logger.error("Error cleaning up old reminders", e);
         }
     }
-    
+
     /**
-     * Cancel reminders for a homework (when homework is deleted or modified)
+     * Convert a notification to a reminder response for display purposes
      */
-    @Transactional
-    public void cancelHomeworkReminders(Long homeworkId) {
-        List<Reminder> reminders = reminderRepository.findByHomeworkId(homeworkId);
-        for (Reminder reminder : reminders) {
-            if (reminder.getStatus() == Reminder.ReminderStatus.PENDING) {
-                reminder.setStatus(Reminder.ReminderStatus.CANCELLED);
-            }
-        }
-        reminderRepository.saveAll(reminders);
-        logger.info("Cancelled {} reminders for homework {}", reminders.size(), homeworkId);
+    private ReminderResponse convertNotificationToReminderResponse(com.homework.entity.Notification notification) {
+        ReminderResponse response = new ReminderResponse();
+        response.setId(notification.getId());
+        response.setHomeworkId(notification.getHomeworkId());
+        response.setHomeworkTitle(notification.getHomeworkTitle());
+        response.setTitle(notification.getTitle());
+        response.setMessage(notification.getMessage());
+        response.setPriority(notification.getPriority());
+        response.setType("NOTIFICATION");
+        response.setDueDate(notification.getCreatedAt()); // Use notification creation time as due date for display
+        response.setCreatedAt(notification.getCreatedAt());
+        response.setIsRead(notification.isRead()); // Use the correct boolean field
+        
+        return response;
     }
 }

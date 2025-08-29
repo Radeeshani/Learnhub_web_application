@@ -1,5 +1,6 @@
 package com.homework.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -7,6 +8,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "classes")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Class {
     
     @Id
@@ -24,6 +26,12 @@ public class Class {
     
     @Column(name = "grade_level")
     private String gradeLevel;
+    
+    @Column(name = "section")
+    private String section; // e.g., "A", "B", "C" for 1-A, 1-B, 1-C
+    
+    @Column(name = "capacity")
+    private Integer capacity; // Maximum number of students
     
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -117,6 +125,22 @@ public class Class {
     
     public void setGradeLevel(String gradeLevel) {
         this.gradeLevel = gradeLevel;
+    }
+    
+    public String getSection() {
+        return section;
+    }
+    
+    public void setSection(String section) {
+        this.section = section;
+    }
+    
+    public Integer getCapacity() {
+        return capacity;
+    }
+    
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
     }
     
     public String getDescription() {
@@ -247,6 +271,16 @@ public class Class {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+    
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
     }
     
     @Override

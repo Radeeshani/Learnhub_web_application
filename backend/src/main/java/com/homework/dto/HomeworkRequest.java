@@ -17,6 +17,12 @@ public class HomeworkRequest {
     @NotBlank(message = "Class grade is required")
     private String classGrade;
     
+    @NotNull(message = "Grade is required")
+    private Integer grade;
+    
+    @NotNull(message = "Class is required")
+    private Long classId;
+    
     @NotNull(message = "Due date is required")
     private LocalDateTime dueDate;
     
@@ -52,6 +58,22 @@ public class HomeworkRequest {
     
     public void setClassGrade(String classGrade) {
         this.classGrade = classGrade;
+    }
+    
+    public Integer getGrade() {
+        return grade;
+    }
+    
+    public void setGrade(Integer grade) {
+        this.grade = grade;
+    }
+    
+    public Long getClassId() {
+        return classId;
+    }
+    
+    public void setClassId(Long classId) {
+        this.classId = classId;
     }
     
     public LocalDateTime getDueDate() {

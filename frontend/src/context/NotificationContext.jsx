@@ -22,7 +22,7 @@ export const NotificationProvider = ({ children }) => {
     if (!token || !user) return;
     
     try {
-      const response = await fetch('http://localhost:8080/api/homework/notifications/user', {
+      const response = await fetch('/api/homework/notifications/user', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -44,7 +44,7 @@ export const NotificationProvider = ({ children }) => {
     if (!token) return;
     
     try {
-      const response = await fetch(`http://localhost:8080/api/homework/notifications/${notificationId}/read`, {
+      const response = await fetch(`/api/homework/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -70,7 +70,7 @@ export const NotificationProvider = ({ children }) => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:8080/api/homework/notifications/mark-all-read', {
+      const response = await fetch('/api/homework/notifications/mark-all-read', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

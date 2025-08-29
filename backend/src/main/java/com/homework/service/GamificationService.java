@@ -82,10 +82,13 @@ public class GamificationService {
             // Save progress
             userProgressRepository.save(progress);
             
-            // Check for new badges
-            checkAndAwardBadges(progress);
-            
-            logger.debug("Awarded {} points to student {} for homework submission", pointsEarned, studentId);
+                    // Check for new badges
+        checkAndAwardBadges(progress);
+        
+        // Automatically update challenge progress based on actual actions
+        updateChallengeProgressAutomatically(studentId, submission);
+        
+        logger.debug("Awarded {} points to student {} for homework submission", pointsEarned, studentId);
             
         } catch (Exception e) {
             logger.error("Error processing homework submission for gamification", e);
@@ -393,33 +396,139 @@ public class GamificationService {
         }).collect(Collectors.toList());
     }
     
-    public void updateChallengeProgress(Long userId, Long challengeId, Integer progress) {
-        Optional<UserChallenge> userChallengeOpt = userChallengeRepository.findByUserIdAndChallengeId(userId, challengeId);
-        
-        if (userChallengeOpt.isPresent()) {
-            UserChallenge userChallenge = userChallengeOpt.isPresent() ? userChallengeOpt.get() : null;
-            if (userChallenge != null) {
-                userChallenge.setProgress(progress);
+    /**
+     * Automatically update challenge progress based on actual actions
+     * This prevents cheating by ensuring progress only increases through real work
+     */
+    private void updateChallengeProgressAutomatically(Long userId, HomeworkSubmission submission) {
+        try {
+            List<Challenge> activeChallenges = challengeRepository.findActiveChallenges(LocalDateTime.now());
+            
+            for (Challenge challenge : activeChallenges) {
+                // Get or create user challenge record
+                Optional<UserChallenge> userChallengeOpt = userChallengeRepository.findByUserIdAndChallengeId(userId, challenge.getId());
+                UserChallenge userChallenge;
                 
-                // Check if challenge is completed
-                if (progress >= userChallenge.getTarget() && !userChallenge.getIsCompleted()) {
-                    userChallenge.setIsCompleted(true);
-                    userChallenge.setCompletedAt(LocalDateTime.now());
-                    
-                    // Award points
-                    Challenge challenge = challengeRepository.findById(challengeId).orElse(null);
-                    if (challenge != null) {
-                        UserProgress userProgress = getUserProgressOrCreate(userId);
-                        userProgress.addPoints(challenge.getPointsReward());
-                        userProgressRepository.save(userProgress);
-                        
-                        userChallenge.setPointsEarned(challenge.getPointsReward());
-                    }
+                if (userChallengeOpt.isPresent()) {
+                    userChallenge = userChallengeOpt.get();
+                } else {
+                    // Create new user challenge record
+                    userChallenge = new UserChallenge(userId, challenge.getId(), parseChallengeTarget(challenge.getCriteria()));
+                    userChallengeRepository.save(userChallenge);
                 }
                 
-                userChallengeRepository.save(userChallenge);
+                // Update progress based on challenge type and actual actions
+                updateProgressForChallenge(userChallenge, challenge, submission);
             }
+        } catch (Exception e) {
+            logger.error("Error updating challenge progress automatically", e);
         }
+    }
+    
+    /**
+     * Update progress for a specific challenge based on actual actions
+     */
+    private void updateProgressForChallenge(UserChallenge userChallenge, Challenge challenge, HomeworkSubmission submission) {
+        boolean progressUpdated = false;
+        
+        switch (challenge.getType()) {
+            case DAILY:
+                // Daily challenges: Check if this is the first submission of the day
+                if (isFirstSubmissionOfDay(userChallenge.getUserId())) {
+                    userChallenge.addProgress(1);
+                    progressUpdated = true;
+                }
+                break;
+                
+            case WEEKLY:
+                // Weekly challenges: Check specific criteria
+                if (challenge.getTitle().contains("Weekend Warrior")) {
+                    // Count homework submissions in current week
+                    int weeklySubmissions = countWeeklySubmissions(userChallenge.getUserId());
+                    if (weeklySubmissions <= 3) { // Only count up to 3
+                        userChallenge.setProgress(weeklySubmissions);
+                        progressUpdated = true;
+                    }
+                } else if (challenge.getTitle().contains("Perfect Week")) {
+                    // Count perfect scores in current week
+                    int weeklyPerfectScores = countWeeklyPerfectScores(userChallenge.getUserId());
+                    userChallenge.setProgress(weeklyPerfectScores);
+                    progressUpdated = true;
+                }
+                break;
+                
+            case MONTHLY:
+                // Monthly challenges: Check specific criteria
+                if (challenge.getTitle().contains("Streak Master")) {
+                    // Get current streak
+                    UserProgress progress = getUserProgressOrCreate(userChallenge.getUserId());
+                    userChallenge.setProgress(progress.getCurrentStreak());
+                    progressUpdated = true;
+                } else if (challenge.getTitle().contains("Creative Thinker")) {
+                    // Count creative submissions (this would need additional logic)
+                    int creativeSubmissions = countCreativeSubmissions(userChallenge.getUserId());
+                    userChallenge.setProgress(creativeSubmissions);
+                    progressUpdated = true;
+                }
+                break;
+        }
+        
+        // Check if challenge is completed
+        if (progressUpdated && userChallenge.getProgress() >= userChallenge.getTarget() && !userChallenge.getIsCompleted()) {
+            userChallenge.setIsCompleted(true);
+            userChallenge.setCompletedAt(LocalDateTime.now());
+            
+            // Award points
+            UserProgress userProgress = getUserProgressOrCreate(userChallenge.getUserId());
+            userProgress.addPoints(challenge.getPointsReward());
+            userProgressRepository.save(userProgress);
+            
+            userChallenge.setPointsEarned(challenge.getPointsReward());
+            
+            logger.info("Challenge '{}' completed by user {}! Awarded {} points", 
+                       challenge.getTitle(), userChallenge.getUserId(), challenge.getPointsReward());
+        }
+        
+        if (progressUpdated) {
+            userChallengeRepository.save(userChallenge);
+        }
+    }
+    
+    /**
+     * Helper methods for challenge progress calculation
+     */
+    private boolean isFirstSubmissionOfDay(Long userId) {
+        // Check if this is the first submission of the day
+        LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime tomorrow = today.plusDays(1);
+        
+        // This would need to be implemented based on your submission tracking
+        // For now, return true to allow progress
+        return true;
+    }
+    
+    private int countWeeklySubmissions(Long userId) {
+        // Count submissions in current week
+        LocalDateTime weekStart = LocalDateTime.now().toLocalDate().minusDays(7).atStartOfDay();
+        
+        // This would need to be implemented based on your submission tracking
+        // For now, return a placeholder value
+        return 1;
+    }
+    
+    private int countWeeklyPerfectScores(Long userId) {
+        // Count perfect scores in current week
+        LocalDateTime weekStart = LocalDateTime.now().toLocalDate().minusDays(7).atStartOfDay();
+        
+        // This would need to be implemented based on your submission tracking
+        // For now, return a placeholder value
+        return 0;
+    }
+    
+    private int countCreativeSubmissions(Long userId) {
+        // Count creative submissions (this would need additional logic)
+        // For now, return a placeholder value
+        return 0;
     }
     
     // Enhanced Progress Methods

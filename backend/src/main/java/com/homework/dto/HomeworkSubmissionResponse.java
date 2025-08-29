@@ -13,6 +13,7 @@ public class HomeworkSubmissionResponse {
     private Long homeworkId;
     private Long studentId;
     private String studentName;
+    private String studentProfilePicture;
     private String submissionText;
     private String attachmentUrl;
     private String attachmentName;
@@ -57,6 +58,7 @@ public class HomeworkSubmissionResponse {
         // Add student information
         if (student != null) {
             response.setStudentName(student.getFirstName() + " " + student.getLastName());
+            response.setStudentProfilePicture(student.getProfilePicture());
         }
         
         // Add homework information

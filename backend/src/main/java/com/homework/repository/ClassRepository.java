@@ -21,6 +21,9 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
     // Find classes by grade level
     List<Class> findByGradeLevelAndIsActiveTrue(String gradeLevel);
     
+    // Find classes by grade level (all statuses)
+    List<Class> findByGradeLevel(String gradeLevel);
+    
     // Find classes by academic year and semester
     List<Class> findByAcademicYearAndSemesterAndIsActiveTrue(String academicYear, String semester);
     
@@ -47,4 +50,20 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
     
     // Count active classes by grade level
     long countByGradeLevelAndIsActiveTrue(String gradeLevel);
+    
+    // Find top 5 classes by creation date
+    List<Class> findTop5ByOrderByCreatedAtDesc();
+    
+    // Count classes by teacher
+    long countByTeacherId(Long teacherId);
+    
+    // Count total classes
+    long count();
+    
+    // Count active classes
+    long countByIsActiveTrue();
+    
+    // Count classes by student (through enrollments)
+    @Query("SELECT COUNT(DISTINCT c) FROM Class c JOIN c.enrollments e WHERE e.student.id = :studentId AND e.status = 'ACTIVE' AND c.isActive = true")
+    long countClassesByStudent(@Param("studentId") Long studentId);
 }

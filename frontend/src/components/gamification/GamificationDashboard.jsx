@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+// SECURITY: Manual progress updates have been removed to prevent cheating
+// Challenge progress now updates automatically based on actual actions only
 import {
   TrophyIcon,
   StarIcon,
@@ -103,41 +106,18 @@ const GamificationDashboard = () => {
     }
   };
 
-  const updateChallengeProgress = async (challengeId, newProgress) => {
-    try {
-      await axios.post(`/api/gamification/challenges/${challengeId}/progress`, {
-        progress: newProgress
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Refresh challenges data
-      const challengesRes = await axios.get('/api/gamification/challenges', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setChallenges(challengesRes.data);
-      
-      // Show completion animation if challenge is completed
-      const challenge = challenges.find(c => c.id === challengeId);
-      if (challenge && newProgress >= challenge.target) {
-        setShowChallengeComplete(true);
-        setTimeout(() => setShowChallengeComplete(false), 3000);
-      }
-      
-    } catch (err) {
-      console.error('Error updating challenge progress:', err);
-    }
-  };
+  // REMOVED: Manual challenge progress update function to prevent cheating
+  // Progress is now automatically updated through actual actions only
 
   const getLevelColor = (color) => {
     const colorMap = {
-      'Bronze': 'from-amber-600 to-orange-600',
+      'Bronze': 'from-amber-500 to-orange-600',
       'Silver': 'from-gray-400 to-gray-600',
-      'Gold': 'from-yellow-400 to-yellow-600',
-      'Platinum': 'from-slate-300 to-slate-500',
-      'Diamond': 'from-cyan-300 to-blue-500'
+      'Gold': 'from-yellow-400 to-orange-500',
+      'Platinum': 'from-teal-400 to-coral-500',
+      'Diamond': 'from-purple-500 to-yellow-500'
     };
-    return colorMap[color] || 'from-gray-400 to-gray-600';
+    return colorMap[color] || 'from-teal-400 to-coral-500';
   };
 
   const getProgressToNextLevel = () => {
@@ -186,14 +166,14 @@ const GamificationDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-coral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <div className="w-20 h-20 border-4 border-purple-200 rounded-full animate-spin"></div>
-            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-purple-600 rounded-full animate-spin border-t-transparent"></div>
+            <div className="w-20 h-20 border-4 border-teal-200 rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-teal-600 rounded-full animate-spin border-t-transparent"></div>
           </div>
-          <p className="text-xl text-purple-700 font-semibold mt-6">Loading your gamification journey...</p>
-          <p className="text-purple-500 mt-2">Preparing amazing rewards and challenges!</p>
+          <p className="text-xl text-teal-700 font-semibold mt-6">Loading your gamification journey...</p>
+          <p className="text-coral-500 mt-2">Preparing amazing rewards and challenges!</p>
         </div>
       </div>
     );
@@ -201,7 +181,7 @@ const GamificationDashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-coral-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <ExclamationTriangleIcon className="h-10 w-10 text-red-600" />
@@ -211,13 +191,13 @@ const GamificationDashboard = () => {
           <div className="space-y-3">
             <button 
               onClick={fetchAllGamificationData}
-              className="w-full bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors font-semibold"
+              className="btn-primary bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold"
             >
               Try Again
             </button>
             <button 
               onClick={() => navigate(getDashboardRoute())}
-              className="w-full bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors font-semibold"
+              className="btn-secondary bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold"
             >
               Go to {getDashboardName()}
             </button>
@@ -228,7 +208,7 @@ const GamificationDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-coral-50">
       {/* Level Up Animation */}
       <AnimatePresence>
         {showLevelUp && (
@@ -238,9 +218,9 @@ const GamificationDashboard = () => {
             exit={{ opacity: 0, scale: 0.5 }}
             className="fixed inset-0 flex items-center justify-center z-50"
           >
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-12 shadow-2xl">
+            <div className="bg-gradient-to-r from-teal-500 to-coral-500 rounded-full p-12 shadow-2xl border-4 border-white">
               <div className="text-center text-white">
-                <TrophyIcon className="h-32 w-32 mx-auto mb-6" />
+                <TrophyIcon className="h-32 w-32 mx-auto mb-6 text-yellow-300" />
                 <h2 className="text-5xl font-bold mb-4">🎉 LEVEL UP! 🎉</h2>
                 <p className="text-2xl">Congratulations! You've reached {nextLevel?.name}!</p>
               </div>
@@ -256,17 +236,28 @@ const GamificationDashboard = () => {
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="fixed top-6 right-6 bg-green-500 text-white px-8 py-4 rounded-2xl shadow-2xl z-40"
+            className="fixed top-6 right-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl shadow-2xl z-40 border-2 border-white/20"
           >
             <div className="flex items-center space-x-3">
-              <StarIcon className="h-8 w-8" />
+              <StarIcon className="h-8 w-8 text-yellow-300" />
               <span className="text-xl font-bold">Challenge Completed! 🎉</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        {/* Floating Decorative Elements */}
+        <div className="absolute top-20 left-10 w-16 h-16 bg-gradient-to-r from-teal-400 to-coral-400 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-12 h-12 bg-gradient-to-r from-purple-400 to-yellow-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-20 w-20 h-20 bg-gradient-to-r from-coral-400 to-teal-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-10 w-14 h-14 bg-gradient-to-r from-yellow-400 to-purple-400 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '3s' }}></div>
+        
+        {/* Enhanced Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-50/30 via-white/20 to-coral-50/30 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(20,184,166,0.1),transparent_50%)] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(251,146,60,0.1),transparent_50%)] pointer-events-none"></div>
+        
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -274,85 +265,91 @@ const GamificationDashboard = () => {
           className="text-center mb-8"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl blur-3xl opacity-20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-3xl blur-3xl opacity-20"></div>
             <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-                🎮 Gamification Hub
-              </h1>
-              <p className="text-2xl text-gray-700 mb-6">
-                Level up, complete challenges, and earn amazing rewards!
-              </p>
+              <div className="flex items-center justify-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-r from-teal-500 to-coral-500 rounded-3xl flex items-center justify-center mr-6 shadow-2xl">
+                  <TrophyIcon className="h-12 w-12 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-6xl font-bold bg-gradient-to-r from-teal-600 to-coral-600 bg-clip-text text-transparent mb-2">
+                    🎮 Learning Adventure Hub
+                  </h1>
+                  <p className="text-2xl text-gray-700">
+                    Level up, complete challenges, and earn amazing rewards!
+                  </p>
+                </div>
+              </div>
               
-              {/* Navigation Buttons */}
-              <div className="flex flex-wrap justify-center gap-4">
-                <button
-                  onClick={() => navigate(getDashboardRoute())}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                >
-                  <HomeIcon className="h-5 w-5 mr-2" />
-                  {getDashboardName()}
-                </button>
-                
-                {user?.role === 'STUDENT' && (
-                  <button
-                    onClick={() => navigate('/submit-homework')}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                  >
-                    <BookOpenIcon className="h-5 w-5 mr-2" />
-                    Submit Homework
-                  </button>
-                )}
-                
-                {user?.role === 'TEACHER' && (
-                  <button
-                    onClick={() => navigate('/homework/create')}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                  >
-                    <BookOpenIcon className="h-5 w-5 mr-2" />
-                    Create Homework
-                  </button>
-                )}
-                
-                <button
-                  onClick={() => navigate('/calendar')}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-xl hover:from-orange-700 hover:to-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                >
-                  <CalendarIcon className="h-5 w-5 mr-2" />
-                  View Calendar
-                </button>
+              {/* Enhanced Description */}
+              <div className="text-center">
+                <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-100 to-coral-100 px-6 py-3 rounded-2xl border border-teal-200">
+                  <SparklesIcon className="h-6 w-6 text-teal-600" />
+                  <span className="text-teal-800 font-semibold">Track your progress, earn rewards, and level up your learning journey!</span>
+                </div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Navigation Tabs */}
+        {/* Enhanced Navigation Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex justify-center mb-8"
+          className="flex justify-center mb-12"
         >
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-xl border border-white/20">
-            {[
-              { id: 'overview', label: 'Overview', icon: ChartBarIcon },
-              { id: 'levels', label: 'Levels', icon: SparklesIcon },
-              { id: 'challenges', label: 'Challenges', icon: FlagIcon },
-              { id: 'badges', label: 'Badges', icon: GiftIcon },
-              { id: 'leaderboard', label: 'Leaderboard', icon: TrophyIcon }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center space-x-2 ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:text-purple-700 hover:bg-purple-50'
-                }`}
-              >
-                <tab.icon className="h-5 w-5" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-3 shadow-2xl border border-white/20 relative overflow-hidden">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-50/50 to-coral-50/50 opacity-60"></div>
+            
+            <div className="relative z-10 flex space-x-2">
+              {[
+                { id: 'overview', label: 'Overview', icon: ChartBarIcon, color: 'from-teal-500 to-coral-500' },
+                { id: 'levels', label: 'Levels', icon: SparklesIcon, color: 'from-purple-500 to-yellow-500' },
+                { id: 'challenges', label: 'Challenges', icon: FlagIcon, color: 'from-coral-500 to-pink-500' },
+                { id: 'badges', label: 'Badges', icon: GiftIcon, color: 'from-yellow-500 to-orange-500' },
+                { id: 'leaderboard', label: 'Leaderboard', icon: TrophyIcon, color: 'from-teal-500 to-blue-500' }
+              ].map((tab) => (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-8 py-4 rounded-2xl text-base font-bold transition-all duration-300 flex items-center space-x-3 relative overflow-hidden group ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-teal-600 to-coral-600 text-white shadow-xl transform scale-105'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-white/80 hover:shadow-lg'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {/* Active tab indicator */}
+                  {activeTab === tab.id && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-2xl"
+                      layoutId="activeTab"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  
+                  {/* Content */}
+                  <div className="relative z-10 flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      activeTab === tab.id
+                        ? 'bg-white/20 text-white'
+                        : `bg-gradient-to-r ${tab.color} text-white`
+                    }`}>
+                      <tab.icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold">{tab.label}</span>
+                  </div>
+                  
+                  {/* Hover effect */}
+                  {activeTab !== tab.id && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-100 to-coral-100 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  )}
+                </motion.button>
+              ))}
+            </div>
           </div>
         </motion.div>
 
@@ -367,7 +364,7 @@ const GamificationDashboard = () => {
             {/* Current Level Display */}
             {currentLevel && (
               <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl blur-3xl opacity-20"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-3xl blur-3xl opacity-20"></div>
                 <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 text-center border border-white/20">
                   <div className={`w-40 h-40 bg-gradient-to-r ${getLevelColor(currentLevel.color)} rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl transform hover:scale-110 transition-transform duration-300`}>
                     <TrophyIcon className="h-20 w-20 text-white" />
@@ -378,22 +375,22 @@ const GamificationDashboard = () => {
                   <p className="text-xl text-gray-600 mb-8">{currentLevel.specialPrivileges}</p>
                   
                   {nextLevel && (
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-200">
-                      <h3 className="text-2xl font-bold text-purple-800 mb-4 flex items-center justify-center">
+                    <div className="card-gradient bg-gradient-to-r from-teal-500 to-coral-500 rounded-2xl p-8 border border-white/20">
+                      <h3 className="text-2xl font-bold text-white mb-4 flex items-center justify-center">
                         <ArrowRightIcon className="h-6 w-6 mr-2" />
                         Next Level: {nextLevel.name}
                       </h3>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-lg text-purple-600 font-semibold">
+                        <span className="text-lg text-white font-semibold">
                           {nextLevel.pointsRequired - progress.totalPoints} points needed
                         </span>
-                        <span className="text-lg text-purple-600 font-semibold">
+                        <span className="text-lg text-white font-semibold">
                           {Math.round(getProgressToNextLevel())}% complete
                         </span>
                       </div>
-                      <div className="w-full bg-purple-200 rounded-full h-4">
+                      <div className="w-full bg-white/20 rounded-full h-4">
                         <motion.div 
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-1000"
+                          className="bg-gradient-to-r from-yellow-400 to-orange-500 h-4 rounded-full transition-all duration-1000"
                           initial={{ width: 0 }}
                           animate={{ width: `${getProgressToNextLevel()}%` }}
                         />
@@ -409,8 +406,8 @@ const GamificationDashboard = () => {
               {[
                 { label: 'Total Points', value: progress.totalPoints, icon: TrophyIcon, color: 'from-yellow-400 to-orange-500', bgColor: 'from-yellow-50 to-orange-50' },
                 { label: 'Current Streak', value: progress.currentStreak, icon: FireIcon, color: 'from-red-400 to-pink-500', bgColor: 'from-red-50 to-pink-50' },
-                { label: 'Homeworks Completed', value: progress.homeworkCompleted, icon: AcademicCapIcon, color: 'from-green-400 to-blue-500', bgColor: 'from-green-50 to-blue-50' },
-                { label: 'Perfect Scores', value: progress.perfectScores, icon: StarIcon, color: 'from-purple-400 to-pink-500', bgColor: 'from-purple-50 to-pink-50' }
+                { label: 'Homeworks Completed', value: progress.homeworkCompleted, icon: AcademicCapIcon, color: 'from-teal-400 to-coral-500', bgColor: 'from-teal-50 to-coral-50' },
+                { label: 'Perfect Scores', value: progress.perfectScores, icon: StarIcon, color: 'from-purple-400 to-yellow-500', bgColor: 'from-purple-50 to-yellow-50' }
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -433,17 +430,17 @@ const GamificationDashboard = () => {
 
             {/* Progress Bars */}
             <div className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-3xl opacity-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-2xl blur-3xl opacity-10"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
                 <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-                  <ChartBarIcon className="h-8 w-8 mr-3 text-purple-600" />
+                  <ChartBarIcon className="h-8 w-8 mr-3 text-teal-600" />
                   Progress Breakdown
                 </h2>
                 
                 <div className="space-y-8">
                   {[
-                    { label: 'On-time Submissions', current: progress.onTimeSubmissions, total: progress.totalSubmissions, color: 'from-green-400 to-emerald-500', bgColor: 'from-green-50 to-emerald-50' },
-                    { label: 'Perfect Score Rate', current: progress.perfectScores, total: progress.totalSubmissions, color: 'from-purple-400 to-pink-500', bgColor: 'from-purple-50 to-pink-50' }
+                    { label: 'On-time Submissions', current: progress.onTimeSubmissions, total: progress.totalSubmissions, color: 'from-teal-400 to-coral-500', bgColor: 'from-teal-50 to-coral-50' },
+                    { label: 'Perfect Score Rate', current: progress.perfectScores, total: progress.totalSubmissions, color: 'from-purple-400 to-yellow-500', bgColor: 'from-purple-50 to-yellow-50' }
                   ].map((item, index) => (
                     <div key={item.label} className="relative overflow-hidden">
                       <div className={`absolute inset-0 bg-gradient-to-r ${item.bgColor} rounded-xl blur-xl opacity-30`}></div>
@@ -477,10 +474,10 @@ const GamificationDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-3xl opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-2xl blur-3xl opacity-10"></div>
             <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
               <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-                <SparklesIcon className="h-8 w-8 mr-3 text-purple-600" />
+                <SparklesIcon className="h-8 w-8 mr-3 text-teal-600" />
                 Level Progression System
               </h2>
               
@@ -497,7 +494,7 @@ const GamificationDashboard = () => {
                       transition={{ delay: index * 0.1 }}
                       className={`relative overflow-hidden p-6 rounded-2xl border-2 transition-all duration-300 ${
                         isCurrentLevel
-                          ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-xl'
+                          ? 'border-teal-500 bg-gradient-to-r from-teal-50 to-coral-50 shadow-xl'
                           : isUnlocked
                           ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50'
                           : 'border-gray-200 bg-gray-50'
@@ -507,7 +504,7 @@ const GamificationDashboard = () => {
                         <div className="flex items-center space-x-6">
                           <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg ${
                             isCurrentLevel
-                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                              ? 'bg-gradient-to-r from-teal-500 to-coral-500 text-white'
                               : isUnlocked
                               ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
                               : 'bg-gray-400 text-white'
@@ -516,7 +513,7 @@ const GamificationDashboard = () => {
                           </div>
                           <div>
                             <h3 className={`text-2xl font-bold ${
-                              isCurrentLevel ? 'text-purple-800' : isUnlocked ? 'text-green-800' : 'text-gray-600'
+                              isCurrentLevel ? 'text-teal-800' : isUnlocked ? 'text-green-800' : 'text-gray-600'
                             }`}>
                               {level.name}
                             </h3>
@@ -528,7 +525,7 @@ const GamificationDashboard = () => {
                         </div>
                         <div className="text-right">
                           {isCurrentLevel && (
-                            <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-bold">
+                            <div className="bg-teal-100 text-teal-800 px-4 py-2 rounded-full text-sm font-bold">
                               Current Level
                             </div>
                           )}
@@ -559,10 +556,10 @@ const GamificationDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-3xl opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-yellow-600 rounded-2xl blur-3xl opacity-10"></div>
             <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
               <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-                <FlagIcon className="h-8 w-8 mr-3 text-blue-600" />
+                <FlagIcon className="h-8 w-8 mr-3 text-purple-600" />
                 Active Challenges
               </h2>
               
@@ -577,7 +574,7 @@ const GamificationDashboard = () => {
                       className={`relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl ${
                         challenge.isCompleted
                           ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50'
-                          : 'border-gray-200 bg-white hover:border-blue-300'
+                          : 'border-gray-200 bg-white hover:border-purple-300'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-6">
@@ -610,7 +607,7 @@ const GamificationDashboard = () => {
                         <div className="w-full bg-gray-200 rounded-full h-4">
                           <motion.div 
                             className={`h-4 rounded-full transition-all duration-500 ${
-                              challenge.isCompleted ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                              challenge.isCompleted ? 'bg-green-500' : 'bg-gradient-to-r from-purple-500 to-yellow-500'
                             }`}
                             initial={{ width: 0 }}
                             animate={{ width: `${challenge.completionPercentage || 0}%` }}
@@ -619,19 +616,10 @@ const GamificationDashboard = () => {
                       </div>
                       
                       {!challenge.isCompleted && (
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => updateChallengeProgress(challenge.id, Math.min(challenge.userProgress + 1, challenge.target))}
-                            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm font-bold"
-                          >
-                            +1 Progress
-                          </button>
-                          <button
-                            onClick={() => updateChallengeProgress(challenge.id, challenge.target)}
-                            className="bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 transition-colors text-sm font-bold"
-                          >
-                            Complete
-                          </button>
+                        <div className="text-center py-3">
+                          <p className="text-sm text-gray-600">
+                            Progress updates automatically when you complete homework!
+                          </p>
                         </div>
                       )}
                       
@@ -664,10 +652,10 @@ const GamificationDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl blur-3xl opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-yellow-600 rounded-2xl blur-3xl opacity-10"></div>
             <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
               <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-                <GiftIcon className="h-8 w-8 mr-3 text-yellow-600" />
+                <GiftIcon className="h-8 w-8 mr-3 text-purple-600" />
                 Your Badges & Achievements
               </h2>
               
@@ -679,12 +667,12 @@ const GamificationDashboard = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.1 }}
-                      className="relative overflow-hidden border-2 border-gray-200 rounded-2xl p-6 text-center hover:border-yellow-300 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      className="relative overflow-hidden border-2 border-gray-200 rounded-2xl p-6 text-center hover:border-purple-300 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                     >
                       <div className="text-6xl mb-6">{badge.iconUrl}</div>
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">{badge.name}</h3>
                       <p className="text-gray-600 mb-6 text-lg">{badge.description}</p>
-                      <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-full font-bold">
+                      <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 text-sm rounded-full font-bold">
                         {badge.pointsRequired} points required
                       </div>
                     </motion.div>
@@ -708,10 +696,10 @@ const GamificationDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl blur-3xl opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-coral-600 rounded-2xl blur-3xl opacity-10"></div>
             <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
               <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-                <TrophyIcon className="h-8 w-8 mr-3 text-yellow-600" />
+                <TrophyIcon className="h-8 w-8 mr-3 text-teal-600" />
                 Top Performers Leaderboard
               </h2>
               

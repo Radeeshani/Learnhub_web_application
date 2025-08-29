@@ -2,6 +2,8 @@ package com.homework.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "homeworks")
@@ -23,6 +25,12 @@ public class Homework {
     @Column(name = "class_grade", nullable = false)
     private String classGrade;
     
+    @Column(name = "grade", nullable = false)
+    private Integer grade;
+    
+    @Column(name = "class_id", nullable = false)
+    private Long classId;
+    
     @Column(name = "due_date")
     private LocalDateTime dueDate;
     
@@ -40,6 +48,15 @@ public class Homework {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // Many-to-many relationship with classes
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "homework_class_assignments",
+        joinColumns = @JoinColumn(name = "homework_id"),
+        inverseJoinColumns = @JoinColumn(name = "class_id")
+    )
+    private Set<Class> assignedClasses = new HashSet<>();
     
     @PrePersist
     protected void onCreate() {
@@ -92,6 +109,30 @@ public class Homework {
     
     public void setClassGrade(String classGrade) {
         this.classGrade = classGrade;
+    }
+    
+    public Integer getGrade() {
+        return grade;
+    }
+    
+    public void setGrade(Integer grade) {
+        this.grade = grade;
+    }
+    
+    public Long getClassId() {
+        return classId;
+    }
+    
+    public void setClassId(Long classId) {
+        this.classId = classId;
+    }
+    
+    public Set<Class> getAssignedClasses() {
+        return assignedClasses;
+    }
+    
+    public void setAssignedClasses(Set<Class> assignedClasses) {
+        this.assignedClasses = assignedClasses;
     }
     
     public LocalDateTime getDueDate() {
