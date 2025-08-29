@@ -279,7 +279,14 @@ public class HomeworkController {
             @RequestParam(value = "audioFile", required = false) MultipartFile audioFile,
             @RequestHeader("Authorization") String authHeader) {
         try {
+            logger.info("🚀 HOMEWORK CREATION REQUEST RECEIVED");
+            logger.info("📝 Homework details - Title: '{}', Subject: '{}', Grade: {}, Class: {}", title, subject, grade, classGrade);
+            logger.info("📅 Due date: {}", dueDate);
+            logger.info("📎 File attached: {}", file != null ? file.getOriginalFilename() : "None");
+            logger.info("🎵 Audio file attached: {}", audioFile != null ? audioFile.getOriginalFilename() : "None");
+            
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                logger.error("❌ Invalid authorization header");
                 Map<String, String> error = new HashMap<>();
                 error.put("message", "Invalid authorization header");
                 return ResponseEntity.status(401).body(error);
@@ -291,18 +298,19 @@ public class HomeworkController {
             String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
             
             // Debug: Log the token and extracted email
-            logger.debug("Auth header: {}", authHeader);
-            logger.debug("Token: {}", token);
-            logger.debug("Extracted teacher email: {}", teacherEmail);
+            logger.info("🔑 Auth header received: {}", authHeader.substring(0, Math.min(20, authHeader.length())) + "...");
+            logger.info("🔑 Token extracted successfully: {}", token.substring(0, Math.min(20, token.length())) + "...");
+            logger.info("👤 Extracted teacher email: {}", teacherEmail);
             
             if (teacherEmail == null) {
-                logger.error("Failed to extract email from token");
+                logger.error("❌ Failed to extract email from token");
                 Map<String, String> error = new HashMap<>();
                 error.put("message", "Invalid token: Could not extract email");
                 return ResponseEntity.status(401).body(error);
             }
             
-            logger.debug("Creating homework for teacher: {}", teacherEmail);
+            logger.info("✅ Teacher authentication successful: {}", teacherEmail);
+            logger.info("📚 Creating homework for teacher: {}", teacherEmail);
             
             // Create HomeworkRequest from individual parameters
             HomeworkRequest homeworkRequest = new HomeworkRequest();
@@ -319,26 +327,34 @@ public class HomeworkController {
                 // Try parsing with ISO format first (handles Z timezone)
                 DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
                 dueDateTime = LocalDateTime.parse(dueDate, isoFormatter);
+                logger.info("📅 Date parsed successfully: {}", dueDateTime);
             } catch (DateTimeParseException e) {
                 // Fallback: try parsing without timezone
                 try {
                     dueDateTime = LocalDateTime.parse(dueDate);
+                    logger.info("📅 Date parsed with fallback: {}", dueDateTime);
                 } catch (DateTimeParseException e2) {
+                    logger.error("❌ Date parsing failed: {}", dueDate);
                     throw new Exception("Invalid date format. Please use format: yyyy-MM-ddTHH:mm:ss");
                 }
             }
             homeworkRequest.setDueDate(dueDateTime);
             
+            logger.info("📤 Calling homeworkService.createHomework()...");
             Homework homework = homeworkService.createHomework(homeworkRequest, file, audioFile, teacherEmail);
+            
+            logger.info("✅ Homework created successfully with ID: {}", homework.getId());
+            logger.info("📧 Email notifications should be triggered automatically by NotificationService");
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Homework created successfully");
             response.put("id", homework.getId());
             
-            logger.debug("Homework created successfully with ID: {}", homework.getId());
+            logger.info("🎉 HOMEWORK CREATION COMPLETED - ID: {}, Title: '{}'", homework.getId(), homework.getTitle());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Failed to create homework", e);
+            logger.error("❌ Failed to create homework", e);
+            logger.error("🔍 Error details - Type: {}, Message: {}", e.getClass().getSimpleName(), e.getMessage());
             Map<String, String> error = new HashMap<>();
             error.put("message", "Failed to create homework: " + e.getMessage());
             return ResponseEntity.badRequest().body(error);
@@ -348,6 +364,62 @@ public class HomeworkController {
     @GetMapping("/test")
     public String test() {
         return "HomeworkController test method is working!";
+    }
+    
+    /**
+     * Test endpoint to verify frontend-backend communication and authentication
+     */
+    @PostMapping("/test-auth")
+    public ResponseEntity<?> testAuthentication(@RequestHeader("Authorization") String authHeader) {
+        try {
+            logger.info("🔍 TEST AUTHENTICATION REQUEST RECEIVED");
+            logger.info("🔑 Auth header: {}", authHeader != null ? authHeader.substring(0, Math.min(20, authHeader.length())) + "..." : "NULL");
+            
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                logger.error("❌ Invalid authorization header");
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid authorization header");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            logger.info("🔑 Token extracted: {}", token.substring(0, Math.min(20, token.length())) + "...");
+            
+            // Test JWT token validation
+            if (!jwtTokenProvider.validateToken(token)) {
+                logger.error("❌ JWT token validation failed");
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid or expired JWT token");
+                return ResponseEntity.status(401).body(error);
+            }
+            
+            // Extract user information
+            String email = jwtTokenProvider.getEmailFromToken(token);
+            String role = jwtTokenProvider.getRoleFromToken(token);
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            
+            logger.info("✅ JWT token validation successful");
+            logger.info("👤 User email: {}", email);
+            logger.info("👤 User role: {}", role);
+            logger.info("👤 User ID: {}", userId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Authentication test successful");
+            response.put("email", email);
+            response.put("role", role);
+            response.put("userId", userId);
+            response.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            logger.info("🎉 AUTHENTICATION TEST COMPLETED SUCCESSFULLY");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("❌ Authentication test failed", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Authentication test failed: " + e.getMessage());
+            error.put("error", e.getClass().getSimpleName());
+            return ResponseEntity.badRequest().body(error);
+        }
     }
     
     @GetMapping("/teacher")

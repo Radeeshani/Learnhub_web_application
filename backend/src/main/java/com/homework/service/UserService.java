@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import com.homework.enums.UserRole;
 
 @Service
 public class UserService {
@@ -64,6 +66,10 @@ public class UserService {
 
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
+    }
+
+    public List<User> getUsersByRole(UserRole role) {
+        return userRepository.findByRole(role);
     }
 
     public void deleteUser(Long id) {

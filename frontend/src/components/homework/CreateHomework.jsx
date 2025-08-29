@@ -197,20 +197,27 @@ const CreateHomework = () => {
     }
 
     try {
+      console.log('🚀 Starting homework creation process...');
+      console.log('📝 Form data:', formData);
+      console.log('🔑 Token available:', !!token);
+      console.log('👤 User role:', user?.role);
+      
       const formPayload = new FormData();
       if (file) {
         formPayload.append('file', file);
+        console.log('📎 File attached:', file.name, file.size, 'bytes');
       }
       
       if (audioFile) {
         formPayload.append('audioFile', audioFile);
+        console.log('🎵 Audio file attached:', audioFile.name, audioFile.size, 'bytes');
       }
       
       // Convert date string to ISO format
       const dueDate = new Date(formData.dueDate).toISOString();
       
       // Debug: Log the form data
-      console.log('Form data being submitted:', {
+      console.log('📊 Form data being submitted:', {
         title: formData.title,
         description: formData.description,
         subject: formData.subject,
@@ -230,12 +237,24 @@ const CreateHomework = () => {
       formPayload.append('classId', formData.classId);
       formPayload.append('dueDate', dueDate);
 
-             await axios.post('/api/homework', formPayload, {
+      console.log('📤 Making API call to /api/homework...');
+      console.log('🔗 API URL:', '/api/homework');
+      console.log('📋 Request headers:', {
+        'Authorization': `Bearer ${token ? token.substring(0, 20) + '...' : 'NO TOKEN'}`,
+        'Content-Type': 'multipart/form-data'
+      });
+      
+      const response = await axios.post('/api/homework', formPayload, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
+
+      console.log('✅ API call successful!');
+      console.log('📥 Response:', response.data);
+      console.log('🎯 Homework created with ID:', response.data.id);
+      console.log('📧 Email notifications should be triggered automatically...');
 
       setSuccess(true);
       
@@ -257,10 +276,31 @@ const CreateHomework = () => {
       
       // Wait for 1.5 seconds to show success message before navigating
       setTimeout(() => {
+        console.log('🔄 Navigating to teacher dashboard...');
         navigate('/teacher', { state: { message: 'Homework created successfully!' } });
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create homework');
+      console.error('❌ Error creating homework:', err);
+      console.error('📊 Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        statusText: err.response?.statusText
+      });
+      
+      if (err.response) {
+        // Server responded with error
+        console.error('🚨 Server error response:', err.response.data);
+        setError(err.response.data.message || 'Failed to create homework');
+      } else if (err.request) {
+        // Request was made but no response received
+        console.error('🚨 No response received from server');
+        setError('No response from server. Please check your connection.');
+      } else {
+        // Something else happened
+        console.error('🚨 Request setup error:', err.message);
+        setError('Failed to create homework: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }

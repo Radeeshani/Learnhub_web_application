@@ -16,10 +16,14 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class NotificationService {
     
+    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+
     @Autowired
     private NotificationRepository notificationRepository;
     
@@ -158,29 +162,55 @@ public class NotificationService {
     
     // Create new homework notification
     public void createNewHomeworkNotification(Homework homework) {
-        // Get all students
-        List<User> students = userRepository.findByRole(UserRole.STUDENT);
+        logger.info("🔄 Starting new homework notification process for homework: '{}' (ID: {})", homework.getTitle(), homework.getId());
         
-        String title = "New Homework Assigned";
-        String message = String.format("New homework '%s' has been assigned. Due date: %s", 
-                                    homework.getTitle(), homework.getDueDate().toString());
-        
-        List<Long> studentIds = students.stream()
-            .map(User::getId)
-            .collect(Collectors.toList());
-        
-        List<Notification> notifications = createBulkNotifications(studentIds, Notification.NotificationType.NEW_HOMEWORK,
+        try {
+            // Get all students
+            List<User> students = userRepository.findByRole(UserRole.STUDENT);
+            logger.info("👥 Found {} students to notify", students.size());
+            
+            String title = "New Homework Assigned";
+            String message = String.format("New homework '%s' has been assigned. Due date: %s", 
+                                        homework.getTitle(), homework.getDueDate().toString());
+            
+            List<Long> studentIds = students.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+            
+            logger.info("📝 Creating database notifications for {} students", studentIds.size());
+            List<Notification> notifications = createBulkNotifications(studentIds, Notification.NotificationType.NEW_HOMEWORK,
                              title, message, homework.getId(), homework.getTitle(),
                              Notification.NotificationPriority.NORMAL);
-        
-        // Send email notifications
-        for (User student : students) {
-            try {
-                emailService.sendNewHomeworkNotification(student, homework);
-            } catch (Exception e) {
-                // Log error but don't fail notification creation
-                System.err.println("Failed to send email notification to " + student.getEmail() + ": " + e.getMessage());
+            
+            logger.info("✅ Database notifications created successfully: {} notifications", notifications.size());
+            
+            // Send email notifications
+            logger.info("📧 Starting email notification process for {} students", students.size());
+            int emailSuccessCount = 0;
+            int emailFailureCount = 0;
+            
+            for (User student : students) {
+                try {
+                    logger.info("📤 Sending email to student: {} ({})", student.getEmail(), student.getFirstName() + " " + student.getLastName());
+                    emailService.sendNewHomeworkNotification(student, homework);
+                    emailSuccessCount++;
+                    logger.info("✅ Email sent successfully to: {}", student.getEmail());
+                } catch (Exception e) {
+                    emailFailureCount++;
+                    logger.error("❌ Failed to send email notification to {} ({}): {}", 
+                        student.getEmail(), student.getFirstName() + " " + student.getLastName(), e.getMessage());
+                    // Log error but don't fail notification creation
+                    System.err.println("Failed to send email notification to " + student.getEmail() + ": " + e.getMessage());
+                }
             }
+            
+            logger.info("📊 Email notification summary - Total: {}, Success: {}, Failed: {}", 
+                students.size(), emailSuccessCount, emailFailureCount);
+            logger.info("🎉 New homework notification process completed for homework: '{}'", homework.getTitle());
+            
+        } catch (Exception e) {
+            logger.error("❌ Error in createNewHomeworkNotification for homework '{}': {}", homework.getTitle(), e.getMessage(), e);
+            throw e;
         }
     }
     

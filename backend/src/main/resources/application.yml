@@ -34,7 +34,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: ${EMAIL_USERNAME:ashfak25321@gmail.com}
-    password: ${EMAIL_PASSWORD:thfn qrst ozqf dvzlthfn qrst ozqf dvzl}
+    password: ${EMAIL_PASSWORD:aahy bavj ftvf dtqh}
     properties:
       mail:
         smtp:
@@ -71,5 +71,7 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.hibernate: ERROR
+    org.springframework.mail: DEBUG
+    org.springframework.mail.javamail: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n" 

@@ -49,14 +49,29 @@ public class EmailService {
      */
     public void sendNewHomeworkNotification(User user, Homework homework) {
         try {
+            logger.info("🔄 Attempting to send new homework notification email to: {}", user.getEmail());
+            logger.info("📧 Email details - From: {}, To: {}, Subject template: {}", fromEmail, user.getEmail(), newHomeworkSubject);
+            
             String subject = newHomeworkSubject.replace("{title}", homework.getTitle());
             String htmlContent = createNewHomeworkEmail(user, homework);
             
+            logger.info("📝 Email content prepared - Subject: '{}', Content length: {} characters", subject, htmlContent.length());
+            
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("New homework notification email sent to: {}", user.getEmail());
+            
+            logger.info("✅ New homework notification email sent successfully to: {}", user.getEmail());
+            logger.info("📊 Email Summary - User: {} ({}), Homework: '{}', Subject: '{}'", 
+                user.getFirstName() + " " + user.getLastName(), user.getEmail(), homework.getTitle(), subject);
             
         } catch (Exception e) {
-            logger.error("Failed to send new homework notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send new homework notification email to: {}", user.getEmail(), e);
+            logger.error("🔍 Error details - Type: {}, Message: {}", e.getClass().getSimpleName(), e.getMessage());
+            
+            // Log additional debugging information
+            if (e instanceof MessagingException) {
+                MessagingException me = (MessagingException) e;
+                logger.error("📧 MessagingException details - Exception: {}", me.getLocalizedMessage());
+            }
         }
     }
     
@@ -65,14 +80,16 @@ public class EmailService {
      */
     public void sendDueSoonNotification(User user, Homework homework) {
         try {
+            logger.info("🔄 Attempting to send due soon notification email to: {}", user.getEmail());
+            
             String subject = dueSoonSubject.replace("{title}", homework.getTitle());
             String htmlContent = createDueSoonEmail(user, homework);
             
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("Due soon notification email sent to: {}", user.getEmail());
+            logger.info("✅ Due soon notification email sent successfully to: {}", user.getEmail());
             
         } catch (Exception e) {
-            logger.error("Failed to send due soon notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send due soon notification email to: {}", user.getEmail(), e);
         }
     }
     
@@ -81,14 +98,16 @@ public class EmailService {
      */
     public void sendOverdueNotification(User user, Homework homework) {
         try {
+            logger.info("🔄 Attempting to send overdue notification email to: {}", user.getEmail());
+            
             String subject = overdueSubject.replace("{title}", homework.getTitle());
             String htmlContent = createOverdueEmail(user, homework);
             
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("Overdue notification email sent to: {}", user.getEmail());
+            logger.info("✅ Overdue notification email sent successfully to: {}", user.getEmail());
             
         } catch (Exception e) {
-            logger.error("Failed to send overdue notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send overdue notification email to: {}", user.getEmail(), e);
         }
     }
     
@@ -97,14 +116,16 @@ public class EmailService {
      */
     public void sendGradedNotification(User user, Homework homework, String grade, String feedback) {
         try {
+            logger.info("🔄 Attempting to send graded notification email to: {}", user.getEmail());
+            
             String subject = gradedSubject.replace("{title}", homework.getTitle());
             String htmlContent = createGradedEmail(user, homework, grade, feedback);
             
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("Graded notification email sent to: {}", user.getEmail());
+            logger.info("✅ Graded notification email sent successfully to: {}", user.getEmail());
             
         } catch (Exception e) {
-            logger.error("Failed to send graded notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send graded notification email to: {}", user.getEmail(), e);
         }
     }
     
@@ -113,14 +134,16 @@ public class EmailService {
      */
     public void sendSubmissionNotification(User user, Homework homework) {
         try {
+            logger.info("🔄 Attempting to send submission notification email to: {}", user.getEmail());
+            
             String subject = submissionSubject.replace("{title}", homework.getTitle());
             String htmlContent = createSubmissionEmail(user, homework);
             
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("Submission notification email sent to: {}", user.getEmail());
+            logger.info("✅ Submission notification email sent successfully to: {}", user.getEmail());
             
         } catch (Exception e) {
-            logger.error("Failed to send submission notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send submission notification email to: {}", user.getEmail(), e);
         }
     }
     
@@ -129,28 +152,65 @@ public class EmailService {
      */
     public void sendGeneralNotification(User user, String subject, String message) {
         try {
+            logger.info("🔄 Attempting to send general notification email to: {}", user.getEmail());
+            
             String htmlContent = createGeneralEmail(user, subject, message);
             sendEmail(user.getEmail(), subject, htmlContent);
-            logger.info("General notification email sent to: {}", user.getEmail());
+            logger.info("✅ General notification email sent successfully to: {}", user.getEmail());
             
         } catch (Exception e) {
-            logger.error("Failed to send general notification email to: {}", user.getEmail(), e);
+            logger.error("❌ Failed to send general notification email to: {}", user.getEmail(), e);
         }
+    }
+
+    /**
+     * Debug method to check email template values
+     */
+    public Map<String, String> getEmailTemplateValues() {
+        Map<String, String> templates = new HashMap<>();
+        templates.put("fromEmail", fromEmail);
+        templates.put("newHomeworkSubject", newHomeworkSubject);
+        templates.put("dueSoonSubject", dueSoonSubject);
+        templates.put("overdueSubject", overdueSubject);
+        templates.put("gradedSubject", gradedSubject);
+        templates.put("submissionSubject", submissionSubject);
+        return templates;
     }
     
     /**
-     * Send the actual email
+     * Send the actual email with enhanced logging
      */
     private void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        logger.info("📤 Starting email send process...");
+        logger.info("📧 Email details - To: {}, Subject: '{}', Content length: {} chars", to, subject, htmlContent.length());
         
-        helper.setFrom(fromEmail);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true); // true indicates HTML content
-        
-        mailSender.send(message);
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true); // true indicates HTML content
+            
+            logger.info("📝 MimeMessage created successfully");
+            logger.info("📤 Attempting to send email via JavaMailSender...");
+            
+            mailSender.send(message);
+            
+            logger.info("✅ Email sent successfully via JavaMailSender");
+            logger.info("📊 Email delivery confirmed - To: {}, Subject: '{}', From: {}", to, subject, fromEmail);
+            
+        } catch (MessagingException e) {
+            logger.error("❌ MessagingException occurred while sending email to: {}", to, e);
+            logger.error("🔍 MessagingException details - Exception: {}, Localized: {}", 
+                e.getMessage(), e.getLocalizedMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Unexpected error occurred while sending email to: {}", to, e);
+            logger.error("🔍 Error details - Type: {}, Message: {}", e.getClass().getSimpleName(), e.getMessage());
+            throw new MessagingException("Failed to send email: " + e.getMessage(), e);
+        }
     }
     
     /**
