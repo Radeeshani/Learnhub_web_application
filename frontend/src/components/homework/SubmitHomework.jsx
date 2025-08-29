@@ -755,62 +755,61 @@ const SubmitHomework = () => {
                       {/* Audio Instructions */}
                       {homework.audioFileName && (
                         <div className="mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                              </svg>
+                          <div className="flex flex-col space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-500 font-medium">Audio Instructions</p>
+                                <div className="mt-2">
+                                  <audio 
+                                    controls 
+                                    className="w-full h-10 rounded-lg"
+                                    style={{ 
+                                      '--plyr-color-main': '#10b981',
+                                      '--plyr-audio-controls-background': '#f0fdf4',
+                                      '--plyr-audio-control-color': '#059669'
+                                    }}
+                                  >
+                                    <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/wav" />
+                                    <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/mpeg" />
+                                    <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/ogg" />
+                                    Your browser does not support the audio element.
+                                  </audio>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-500 font-medium">Audio Instructions</p>
-                              <div className="mt-2">
-                                <audio 
-                                  controls 
-                                  className="w-full h-10 rounded-lg"
-                                  style={{ 
-                                    '--plyr-color-main': '#10b981',
-                                    '--plyr-audio-controls-background': '#f0fdf4',
-                                    '--plyr-audio-control-color': '#059669'
-                                  }}
-                                >
-                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/wav" />
-                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/mpeg" />
-                                  <source src={`/api/v1/files/download/homework/${homework.audioFileName}`} type="audio/ogg" />
-                                  Your browser does not support the audio element.
-                                </audio>
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-gray-500">
-                                  {homework.audioFileName.replace(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_/, '')}
-                                </p>
-                                <button
-                                  onClick={() => {
-                                    try {
-                                      const audioUrl = `/api/v1/files/download/homework/${homework.audioFileName}`;
-                                      
-                                      // Create a temporary link element to trigger download
-                                      const link = document.createElement('a');
-                                      link.href = audioUrl;
-                                      // Backend will automatically set .mp3 extension for WAV files
-                                      link.download = homework.audioFileName || `audio_instructions_${homework.id}`;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                      
-                                      console.log('Downloading audio instructions:', audioUrl);
-                                    } catch (error) {
-                                      console.error('Error downloading audio:', error);
-                                      alert('Error downloading audio. Please try again.');
-                                    }
-                                  }}
-                                  className="flex items-center space-x-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors text-xs font-medium"
-                                >
-                                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                  </svg>
-                                  <span>Download</span>
-                                </button>
-                              </div>
+                            <div className="flex justify-end">
+                              <button
+                                onClick={() => {
+                                  try {
+                                    const audioUrl = `/api/v1/files/download/homework/${homework.audioFileName}`;
+                                    
+                                    // Create a temporary link element to trigger download
+                                    const link = document.createElement('a');
+                                    link.href = audioUrl;
+                                    // Backend will automatically set .mp3 extension for WAV files
+                                    link.download = homework.audioFileName || `audio_instructions_${homework.id}`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    
+                                    console.log('Downloading audio instructions:', audioUrl);
+                                  } catch (error) {
+                                    console.error('Error downloading audio:', error);
+                                    alert('Error downloading audio. Please try again.');
+                                  }
+                                }}
+                                className="flex items-center space-x-1 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors text-xs font-medium"
+                              >
+                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Download Audio</span>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -834,25 +833,27 @@ const SubmitHomework = () => {
                         
                         {/* Homework Attachment */}
                         {homework.fileUrl && (
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                              {getFileIcon(homework.fileName || homework.fileUrl.split('/').pop())}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-500 font-medium">Homework Material</p>
-                              <div className="flex items-center space-x-2">
-                                <span 
-                                  className="text-sm font-semibold text-gray-900"
-                                  title={homework.fileName || homework.fileUrl.split('/').pop()}
-                                >
-                                  {getCleanFileName(homework.fileName || homework.fileUrl.split('/').pop())}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {getFileExtension(homework.fileName || homework.fileUrl.split('/').pop())}
-                                </span>
+                          <div className="flex flex-col space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                {getFileIcon(homework.fileName || homework.fileUrl.split('/').pop())}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-500 font-medium">Homework Material</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span 
+                                    className="text-sm font-semibold text-gray-900 truncate"
+                                    title={homework.fileName || homework.fileUrl.split('/').pop()}
+                                  >
+                                    {getCleanFileName(homework.fileName || homework.fileUrl.split('/').pop())}
+                                  </span>
+                                  <span className="text-xs text-gray-500 flex-shrink-0">
+                                    {getFileExtension(homework.fileName || homework.fileUrl.split('/').pop())}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex justify-end space-x-2">
                               <button
                                 onClick={() => {
                                   try {
@@ -1055,28 +1056,30 @@ const SubmitHomework = () => {
               {/* Homework Attachment in Modal Header */}
               {selectedHomework.fileUrl && (
                 <div className="mt-2 p-4 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-purple-200 rounded-lg flex items-center justify-center">
-                      {getFileIcon(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-purple-800 font-medium">📚 Homework Material</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span 
-                          className="text-sm font-semibold text-purple-900"
-                          title={selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop()}
-                        >
-                          {getCleanFileName(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
-                        </span>
-                        <span className="text-xs text-purple-600 bg-purple-200 px-2 py-1 rounded-full">
-                          {getFileExtension(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
-                        </span>
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-200 rounded-lg flex items-center justify-center">
+                        {getFileIcon(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
                       </div>
-                      <p className="text-xs text-purple-600 mt-1">
-                        Review this material before submitting your work
-                      </p>
+                      <div className="flex-1">
+                        <p className="text-sm text-purple-800 font-medium">📚 Homework Material</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span 
+                            className="text-sm font-semibold text-purple-900"
+                            title={selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop()}
+                          >
+                            {getCleanFileName(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
+                          </span>
+                          <span className="text-xs text-purple-600 bg-purple-200 px-2 py-1 rounded-full">
+                            {getFileExtension(selectedHomework.fileName || selectedHomework.fileUrl.split('/').pop())}
+                          </span>
+                        </div>
+                        <p className="text-xs text-purple-600 mt-1">
+                          Review this material before submitting your work
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex justify-end space-x-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -1181,63 +1184,61 @@ const SubmitHomework = () => {
               {/* Audio Instructions in Modal Header */}
               {selectedHomework.audioFileName && (
                 <div className="mt-2 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-emerald-200 rounded-lg flex items-center justify-center">
-                      <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-emerald-200 rounded-lg flex items-center justify-center">
+                        <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-emerald-800 font-medium">🎤 Voice Instructions</p>
+                        <div className="mt-2">
+                          <audio 
+                            controls 
+                            className="w-full h-10 rounded-lg"
+                            style={{ 
+                              '--plyr-color-main': '#10b981',
+                              '--plyr-audio-controls-background': '#f0fdf4',
+                              '--plyr-audio-control-color': '#059669'
+                            }}
+                          >
+                            <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/wav" />
+                            <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/ogg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-emerald-800 font-medium">🎤 Voice Instructions</p>
-                      <div className="mt-2">
-                        <audio 
-                          controls 
-                          className="w-full h-10 rounded-lg"
-                          style={{ 
-                            '--plyr-color-main': '#10b981',
-                            '--plyr-audio-controls-background': '#f0fdf4',
-                            '--plyr-audio-control-color': '#059669'
-                          }}
-                        >
-                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/wav" />
-                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/mpeg" />
-                          <source src={`/api/v1/files/download/homework/${selectedHomework.audioFileName}`} type="audio/ogg" />
-                          Your browser does not support the audio element.
-                        </audio>
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-emerald-600">
-                          Listen to teacher's voice instructions
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            try {
-                              const audioUrl = `/api/v1/files/download/homework/${selectedHomework.audioFileName}`;
-                              
-                                                                    // Create a temporary link element to trigger download
-                                      const link = document.createElement('a');
-                                      link.href = audioUrl;
-                                      // Backend will automatically set .mp3 extension for WAV files
-                                      link.download = selectedHomework.audioFileName || `audio_instructions_${selectedHomework.id}`;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                              
-                              console.log('Downloading audio instructions from modal:', audioUrl);
-                            } catch (error) {
-                              console.error('Error downloading audio:', error);
-                              alert('Error downloading audio. Please try again.');
-                            }
-                          }}
-                          className="flex items-center space-x-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-xs font-medium shadow-sm"
-                        >
-                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>Download</span>
-                        </button>
-                      </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const audioUrl = `/api/v1/files/download/homework/${selectedHomework.audioFileName}`;
+                            
+                            // Create a temporary link element to trigger download
+                            const link = document.createElement('a');
+                            link.href = audioUrl;
+                            // Backend will automatically set .mp3 extension for WAV files
+                            link.download = selectedHomework.audioFileName || `audio_instructions_${selectedHomework.id}`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            console.log('Downloading audio instructions from modal:', audioUrl);
+                          } catch (error) {
+                            console.error('Error downloading audio:', error);
+                            alert('Error downloading audio. Please try again.');
+                          }
+                        }}
+                        className="flex items-center space-x-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-xs font-medium shadow-sm"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Download Audio</span>
+                      </button>
                     </div>
                   </div>
                 </div>
