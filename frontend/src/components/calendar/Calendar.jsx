@@ -14,6 +14,8 @@ const Calendar = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showEditEventModal, setShowEditEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -173,6 +175,103 @@ const Calendar = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Edit event
+  const editEvent = async () => {
+    if (!token || !canAddEvents || !editingEvent) return;
+    
+    // Validate required fields
+    if (!editingEvent.title || !editingEvent.startTime || !editingEvent.endTime) {
+      showError('Missing required fields', 'Please fill in title, start time, and end time');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/homework/calendar/events/${editingEvent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editingEvent)
+      });
+      
+      if (response.ok) {
+        showSuccess('Event updated successfully', 'The calendar event has been updated');
+        setShowEditEventModal(false);
+        setEditingEvent(null);
+        fetchEvents(); // Refresh events
+      } else {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        showError('Failed to update event', `Backend error: ${errorData}`);
+      }
+    } catch (error) {
+      console.error('Error updating event', error);
+      showError('Failed to update event', 'Please check your connection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete event
+  const deleteEvent = async (eventId) => {
+    if (!token || !canAddEvents) return;
+    
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/homework/calendar/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        showSuccess('Event deleted successfully', 'The calendar event has been removed');
+        setShowEventModal(false);
+        setSelectedEvent(null);
+        fetchEvents(); // Refresh events
+      } else {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        showError('Failed to delete event', `Backend error: ${errorData}`);
+      }
+    } catch (error) {
+      console.error('Error deleting event', error);
+      showError('Failed to delete event', 'Please check your connection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start editing an event
+  const startEditingEvent = (event) => {
+    setEditingEvent({
+      ...event,
+      startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
+      endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : ''
+    });
+    setShowEditEventModal(true);
+    setShowEventModal(false);
+  };
+
+  // Handle edit form input changes
+  const handleEditInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditingEvent(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   // Handle form input changes
@@ -337,13 +436,18 @@ const Calendar = () => {
             
             {/* Add Event Button - Only for Teachers and Admins */}
             {canAddEvents && (
-              <button
-                onClick={() => setShowAddEventModal(true)}
-                className="btn-primary bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110"
-              >
-                <PlusIcon className="h-6 w-6 mr-2" />
-                <span>Add Event</span>
-              </button>
+              <div className="flex flex-col items-end space-y-2">
+                <button
+                  onClick={() => setShowAddEventModal(true)}
+                  className="btn-primary bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110"
+                >
+                  <PlusIcon className="h-6 w-6 mr-2" />
+                  <span>Add Event</span>
+                </button>
+                <div className="text-xs text-coral-600 bg-coral-50 px-3 py-1 rounded-full border border-coral-200">
+                  ✏️ Click on any event to edit or delete it
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -651,6 +755,12 @@ const Calendar = () => {
                         <h4 className="font-bold text-white truncate group-hover:text-yellow-200 transition-colors">
                           {event.title}
                         </h4>
+                        {/* Edit indicator for teachers and admins */}
+                        {canAddEvents && (
+                          <span className="text-xs bg-white/20 text-white px-1 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            ✏️
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-white/80 mb-2 line-clamp-2">
                         {event.description || 'No description'}
@@ -772,7 +882,7 @@ const Calendar = () => {
                             setSelectedEvent(event);
                             setShowEventModal(true);
                           }}
-                          className="group cursor-pointer transition-all duration-300 transform hover:scale-105 hover:rotate-1"
+                          className="group cursor-pointer transition-all duration-300 transform hover:scale-105 hover:rotate-1 relative"
                           style={{ background: getEventTypeColor(event.eventType) }}
                         >
                           <div className="text-white font-bold text-xs p-2 rounded-lg shadow-lg border-2 border-white/20 group-hover:border-white/40 group-hover:shadow-xl">
@@ -783,6 +893,15 @@ const Calendar = () => {
                             {event.userId && (
                               <div className="text-xs text-white/80 mt-1">
                                 User {event.userId}
+                              </div>
+                            )}
+                            
+                            {/* Edit indicator for teachers and admins */}
+                            {canAddEvents && (
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="w-3 h-3 bg-white/30 rounded-full flex items-center justify-center">
+                                  <span className="text-xs text-white">✏️</span>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -908,6 +1027,12 @@ const Calendar = () => {
                           <h4 className="font-bold text-white truncate group-hover:text-yellow-200 transition-colors">
                             {event.title}
                           </h4>
+                          {/* Edit indicator for teachers and admins */}
+                          {canAddEvents && (
+                            <span className="text-xs bg-white/20 text-white px-1 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              ✏️
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-white/80 mb-2 line-clamp-2">
                           {event.description || 'No description'}
@@ -1138,7 +1263,25 @@ const Calendar = () => {
                       )}
                     </div>
                     
-                    <div className="mt-8 flex justify-end">
+                    <div className="mt-8 flex justify-between items-center">
+                      {/* Edit and Delete buttons for Teachers and Admins */}
+                      {canAddEvents && !selectedEvent.isMultiEvent && (
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => startEditingEvent(selectedEvent)}
+                            className="btn-secondary bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                          >
+                            ✏️ Edit Event
+                          </button>
+                          <button
+                            onClick={() => deleteEvent(selectedEvent.id)}
+                            className="btn-secondary bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                          >
+                            🗑️ Delete Event
+                          </button>
+                        </div>
+                      )}
+                      
                       <button
                         onClick={() => setShowEventModal(false)}
                         className="btn-primary bg-gradient-to-r from-teal-500 to-coral-500 hover:from-teal-600 hover:to-coral-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
@@ -1317,6 +1460,177 @@ const Calendar = () => {
                     className="btn-primary bg-gradient-to-r from-teal-500 to-coral-500 hover:from-teal-600 hover:to-coral-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {loading ? '✨ Creating... ✨' : '🚀 Create Event 🚀'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Event Modal - Only for Teachers and Admins */}
+        {showEditEventModal && canAddEvents && editingEvent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-6 border-0 w-[500px] shadow-2xl rounded-3xl bg-gradient-to-br from-white via-blue-50 to-indigo-50 border-2 border-blue-200">
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    ✏️ Edit Event ✏️
+                  </h3>
+                  <button
+                    onClick={() => setShowEditEventModal(false)}
+                    className="text-blue-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-100 transition-all duration-300 transform hover:scale-110"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-blue-700 mb-2">🎯 Event Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={editingEvent.title}
+                      onChange={handleEditInputChange}
+                      className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 text-lg transition-all duration-300 transform focus:scale-105"
+                      placeholder="Enter exciting event title..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-blue-700 mb-2">📝 Description</label>
+                    <textarea
+                      name="description"
+                      value={editingEvent.description || ''}
+                      onChange={handleEditInputChange}
+                      rows={3}
+                      className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 text-lg transition-all duration-300 transform focus:scale-105"
+                      placeholder="Describe your amazing event..."
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-blue-700 mb-2">🚀 Start Time</label>
+                      <input
+                        type="datetime-local"
+                        name="startTime"
+                        value={editingEvent.startTime}
+                        onChange={handleEditInputChange}
+                        className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 transform focus:scale-105"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-bold text-blue-700 mb-2">🏁 End Time</label>
+                      <input
+                        type="datetime-local"
+                        name="endTime"
+                        value={editingEvent.endTime}
+                        onChange={handleEditInputChange}
+                        className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 transform focus:scale-105"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-blue-700 mb-2">🎨 Event Type</label>
+                      <select
+                        name="eventType"
+                        value={editingEvent.eventType}
+                        onChange={handleEditInputChange}
+                        className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 transform focus:scale-105"
+                      >
+                        <option value="CUSTOM">✨ Custom</option>
+                        <option value="CLASS_SESSION">🏫 Class Session</option>
+                        <option value="EXAM">📋 Exam</option>
+                        <option value="HOLIDAY">🎉 Holiday</option>
+                        <option value="MEETING">🤝 Meeting</option>
+                        <option value="REMINDER">⏰ Reminder</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-bold text-blue-700 mb-2">🎨 Color</label>
+                      <input
+                        type="color"
+                        name="color"
+                        value={editingEvent.color || '#3B82F6'}
+                        onChange={handleEditInputChange}
+                        className="input-field w-full h-12 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 transform focus:scale-105"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-blue-700 mb-2">📍 Location</label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={editingEvent.location || ''}
+                      onChange={handleEditInputChange}
+                      className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 text-lg transition-all duration-300 transform focus:scale-105"
+                      placeholder="Where's the event happening?"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="recurring"
+                        checked={editingEvent.recurring || false}
+                        onChange={handleEditInputChange}
+                        className="h-5 w-5 text-blue-600 focus:ring-4 focus:ring-blue-200 border-blue-300 rounded-lg transition-all duration-300"
+                      />
+                      <label className="ml-3 block text-lg font-bold text-blue-700">🔄 Recurring Event</label>
+                    </div>
+                    
+                    {editingEvent.recurring && (
+                      <div>
+                        <label className="block text-sm font-bold text-blue-700 mb-2">🔄 Recurrence Pattern</label>
+                        <select
+                          name="recurrencePattern"
+                          value={editingEvent.recurrencePattern || ''}
+                          onChange={handleEditInputChange}
+                          className="input-field w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 transform focus:scale-105"
+                        >
+                          <option value="">Select Pattern</option>
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="YEARLY">Yearly</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="allDay"
+                      checked={editingEvent.allDay || false}
+                      onChange={handleEditInputChange}
+                      className="h-5 w-5 text-blue-600 focus:ring-4 focus:ring-blue-200 border-blue-300 rounded-lg transition-all duration-300"
+                    />
+                    <label className="ml-3 block text-lg font-bold text-blue-700">🌟 All day event</label>
+                  </div>
+                </div>
+                
+                <div className="mt-8 flex justify-end space-x-4">
+                  <button
+                    onClick={() => setShowEditEventModal(false)}
+                    className="btn-secondary bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                  >
+                    ❌ Cancel
+                  </button>
+                  <button
+                    onClick={editEvent}
+                    disabled={loading || !editingEvent.title || !editingEvent.startTime}
+                    className="btn-primary bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {loading ? '✨ Updating... ✨' : '💾 Save Changes 💾'}
                   </button>
                 </div>
               </div>

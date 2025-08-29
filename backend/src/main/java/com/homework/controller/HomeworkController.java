@@ -177,6 +177,78 @@ public class HomeworkController {
         }
     }
 
+    // Update calendar event
+    @PutMapping("/calendar/events/{eventId}")
+    public ResponseEntity<?> updateCalendarEvent(
+            @PathVariable Long eventId,
+            @RequestBody CalendarEventRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            
+            // Check if user can edit this event (only teachers and admins can edit events)
+            User currentUser = userService.getUserById(userId);
+            if (currentUser == null || (currentUser.getRole() != UserRole.TEACHER && currentUser.getRole() != UserRole.ADMIN)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only teachers and admins can edit calendar events");
+            }
+            
+            // Get the existing event
+            CalendarEvent existingEvent = calendarService.getEventById(eventId);
+            
+            // Update the event with new details
+            CalendarEvent updatedEvent = new CalendarEvent();
+            updatedEvent.setTitle(request.getTitle());
+            updatedEvent.setDescription(request.getDescription());
+            updatedEvent.setStartTime(request.getStartTime());
+            updatedEvent.setEndTime(request.getEndTime());
+            updatedEvent.setAllDay(request.isAllDay());
+            updatedEvent.setEventType(request.getEventTypeEnum());
+            updatedEvent.setColor(request.getColor() != null ? request.getColor() : "#3B82F6");
+            updatedEvent.setLocation(request.getLocation());
+            updatedEvent.setRecurring(request.isRecurring());
+            updatedEvent.setRecurrencePattern(request.getRecurrencePattern());
+            
+            CalendarEvent savedEvent = calendarService.updateEvent(eventId, updatedEvent);
+            return ResponseEntity.ok(savedEvent);
+        } catch (Exception e) {
+            logger.error("Error updating calendar event: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body("Error updating calendar event: " + e.getMessage());
+        }
+    }
+
+    // Delete calendar event
+    @DeleteMapping("/calendar/events/{eventId}")
+    public ResponseEntity<?> deleteCalendarEvent(
+            @PathVariable Long eventId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
+            }
+            
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            
+            // Check if user can delete this event (only teachers and admins can delete events)
+            User currentUser = userService.getUserById(userId);
+            if (currentUser == null || (currentUser.getRole() != UserRole.TEACHER && currentUser.getRole() != UserRole.ADMIN)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only teachers and admins can delete calendar events");
+            }
+            
+            // Delete the event
+            calendarService.deleteEvent(eventId);
+            return ResponseEntity.ok("Calendar event deleted successfully");
+        } catch (Exception e) {
+            logger.error("Error deleting calendar event: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body("Error deleting calendar event: " + e.getMessage());
+        }
+    }
+
     // Get calendar summary
     @GetMapping("/calendar/summary")
     public ResponseEntity<?> getCalendarSummary(@RequestHeader("Authorization") String authHeader) {
