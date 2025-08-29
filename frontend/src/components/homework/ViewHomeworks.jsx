@@ -213,7 +213,7 @@ const ViewHomeworks = () => {
         fullFeedback = feedback ? `${feedback}\n\n${stickerText}` : stickerText;
       }
 
-      await axios.put(`/api/homework/submissions/${selectedSubmission.id}/grade`, {
+      await axios.post(`/api/homework/submissions/${selectedSubmission.id}/grade`, {
         grade: parseInt(grade),
         feedback: fullFeedback
       }, {

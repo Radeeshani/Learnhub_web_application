@@ -14,6 +14,7 @@ import com.homework.dto.StudentHomeworkResponse;
 import com.homework.dto.HomeworkSubmissionRequest;
 import com.homework.dto.HomeworkSubmissionResponse;
 import com.homework.entity.User;
+import com.homework.enums.UserRole;
 import com.homework.service.HomeworkSubmissionService;
 import com.homework.service.UserService;
 
@@ -843,6 +844,38 @@ public class HomeworkController {
             return ResponseEntity.ok(classes);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error retrieving classes: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/classes/teacher/current")
+    public ResponseEntity<?> getClassesByCurrentTeacher(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid authorization header"));
+            }
+
+            String token = authHeader.substring(7);
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid or expired token"));
+            }
+
+            String teacherEmail = jwtTokenProvider.getEmailFromToken(token);
+            User teacher = userService.getUserByEmail(teacherEmail);
+            
+            if (teacher == null || teacher.getRole() != UserRole.TEACHER) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Access denied. User is not a teacher."));
+            }
+            
+            List<ClassResponse> classes = classService.getClassesByTeacher(teacher.getId());
+            return ResponseEntity.ok(classes);
+            
+        } catch (Exception e) {
+            logger.error("Error fetching classes for current teacher: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch classes: " + e.getMessage()));
         }
     }
     

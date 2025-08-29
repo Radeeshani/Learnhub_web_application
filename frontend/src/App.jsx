@@ -28,6 +28,8 @@ import Sidebar from './components/common/Sidebar';
 import Reminders from './components/reminders/Reminders';
 import Notifications from './components/notifications/Notifications';
 import Library from './components/library/Library';
+import Reports from './components/reports/Reports';
+import StudentReports from './components/reports/StudentReports';
 
 const App = () => {
   return (
@@ -253,6 +255,29 @@ const App = () => {
                     <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT', 'PARENT']}>
                       <Sidebar>
                         <Notifications />
+                      </Sidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Reports Routes */}
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute allowedRoles={['TEACHER']}>
+                      <Sidebar>
+                        <Reports />
+                      </Sidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/reports/student"
+                  element={
+                    <ProtectedRoute allowedRoles={['STUDENT']}>
+                      <Sidebar>
+                        <StudentReports />
                       </Sidebar>
                     </ProtectedRoute>
                   }

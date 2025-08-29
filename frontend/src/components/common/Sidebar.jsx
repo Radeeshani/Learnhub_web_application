@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiUsers, FiBookOpen, FiCalendar, FiAward, FiSettings, 
   FiMenu, FiX, FiChevronLeft, FiChevronRight, FiUser, FiLogOut,
-  FiPlus, FiGrid, FiBell, FiStar, FiBook
+  FiPlus, FiGrid, FiBell, FiStar, FiBook, FiFileText
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -124,6 +124,7 @@ const Sidebar = ({ children }) => {
       baseItems.splice(3, 0, { name: 'View Homeworks', icon: FiBookOpen, path: '/homework/view', color: 'blue' });
       baseItems.splice(4, 0, { name: 'Library', icon: FiBook, path: '/library', color: 'purple' });
       baseItems.splice(5, 0, { name: 'Create Homework', icon: FiPlus, path: '/homework/create', color: 'yellow' });
+      baseItems.splice(6, 0, { name: 'Reports', icon: FiFileText, path: '/reports', color: 'indigo' });
     }
 
     if (user?.role === 'STUDENT') {
@@ -131,6 +132,7 @@ const Sidebar = ({ children }) => {
       baseItems.splice(3, 0, { name: 'Library', icon: FiBook, path: '/library', color: 'purple' });
       baseItems.splice(4, 0, { name: 'Submit Homework', icon: FiPlus, path: '/submit-homework', color: 'yellow' });
       baseItems.splice(5, 0, { name: 'Gamification', icon: FiStar, path: '/gamification', color: 'yellow' });
+      baseItems.splice(6, 0, { name: 'Reports', icon: FiFileText, path: '/reports/student', color: 'indigo' });
     }
 
     if (user?.role === 'PARENT') {
@@ -146,7 +148,8 @@ const Sidebar = ({ children }) => {
       coral: 'from-coral-500 to-coral-600',
       purple: 'from-purple-500 to-purple-600',
       yellow: 'from-yellow-500 to-yellow-600',
-      blue: 'from-blue-500 to-blue-600'
+      blue: 'from-blue-500 to-blue-600',
+      indigo: 'from-indigo-500 to-indigo-600'
     };
     return colorMap[color] || 'from-teal-500 to-teal-600';
   };
