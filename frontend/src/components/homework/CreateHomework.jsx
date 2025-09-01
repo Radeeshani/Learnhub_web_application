@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import EmailStatusIndicator from '../common/EmailStatusIndicator';
 import { 
   DocumentPlusIcon, 
   CalendarIcon, 
@@ -38,6 +39,8 @@ const CreateHomework = () => {
   const [preview, setPreview] = useState('');
   const [teacherClasses, setTeacherClasses] = useState([]);
   const [fetchingClasses, setFetchingClasses] = useState(true);
+  const [emailStatus, setEmailStatus] = useState('pending');
+  const [emailStudentCount, setEmailStudentCount] = useState(0);
   const navigate = useNavigate();
   const { token, user } = useAuth();
   const audioRef = useRef(null);
@@ -258,6 +261,14 @@ const CreateHomework = () => {
 
       setSuccess(true);
       
+      // Update email status
+      setEmailStatus('success');
+      setEmailStudentCount(response.data.studentCount || 0);
+      
+      // Show email notification info
+      const studentCount = response.data.studentCount || 'unknown number of';
+      setSuccess(`Homework created successfully! 📧 Email notifications will be sent to ${studentCount} students.`);
+      
       // Reset form
       setFormData({
         title: '',
@@ -432,6 +443,18 @@ const CreateHomework = () => {
               onSubmit={handleSubmit} 
               className="space-y-6"
             >
+              {/* Email Status Indicator */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.65 }}
+              >
+                <EmailStatusIndicator 
+                  status={emailStatus} 
+                  studentCount={emailStudentCount}
+                  className="mb-4"
+                />
+              </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}

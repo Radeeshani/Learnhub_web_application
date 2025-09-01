@@ -45,6 +45,8 @@ spring:
           protocol: smtp
     default-encoding: UTF-8
   
+
+  
   # security:
   #   user:
   #     name: admin
@@ -54,15 +56,11 @@ jwt:
   secret: 12345678901234567890123456789012
   expiration: 86400000  # 24 hours in milliseconds
 
-# Email Templates Configuration
+# Email Configuration
 email:
   from: ${EMAIL_FROM:ashfak25321@gmail.com}
-  templates:
-    new-homework: "New Homework Assignment: {title}"
-    due-soon: "Homework Due Soon: {title}"
-    overdue: "Homework Overdue: {title}"
-    graded: "Homework Graded: {title}"
-    submission: "Homework Submission Received: {title}"
+
+
 
 logging:
   level:
@@ -72,6 +70,6 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate: ERROR
     org.springframework.mail: DEBUG
-    org.springframework.mail.javamail: DEBUG
+
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n" 

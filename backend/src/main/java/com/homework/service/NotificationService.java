@@ -33,9 +33,6 @@ public class NotificationService {
     @Autowired
     private HomeworkRepository homeworkRepository;
     
-    @Autowired
-    private EmailService emailService;
-    
     // Create a notification for a single user
     public Notification createNotification(Long userId, Notification.NotificationType type, 
                                         String title, String message, Long homeworkId, 
@@ -183,29 +180,6 @@ public class NotificationService {
                              Notification.NotificationPriority.NORMAL);
             
             logger.info("✅ Database notifications created successfully: {} notifications", notifications.size());
-            
-            // Send email notifications
-            logger.info("📧 Starting email notification process for {} students", students.size());
-            int emailSuccessCount = 0;
-            int emailFailureCount = 0;
-            
-            for (User student : students) {
-                try {
-                    logger.info("📤 Sending email to student: {} ({})", student.getEmail(), student.getFirstName() + " " + student.getLastName());
-                    emailService.sendNewHomeworkNotification(student, homework);
-                    emailSuccessCount++;
-                    logger.info("✅ Email sent successfully to: {}", student.getEmail());
-                } catch (Exception e) {
-                    emailFailureCount++;
-                    logger.error("❌ Failed to send email notification to {} ({}): {}", 
-                        student.getEmail(), student.getFirstName() + " " + student.getLastName(), e.getMessage());
-                    // Log error but don't fail notification creation
-                    System.err.println("Failed to send email notification to " + student.getEmail() + ": " + e.getMessage());
-                }
-            }
-            
-            logger.info("📊 Email notification summary - Total: {}, Success: {}, Failed: {}", 
-                students.size(), emailSuccessCount, emailFailureCount);
             logger.info("🎉 New homework notification process completed for homework: '{}'", homework.getTitle());
             
         } catch (Exception e) {
@@ -233,16 +207,6 @@ public class NotificationService {
         createBulkNotifications(teacherIds, Notification.NotificationType.SUBMISSION_RECEIVED,
                              title, message, homework.getId(), homeworkTitle,
                              Notification.NotificationPriority.NORMAL);
-        
-        // Send email notifications to teachers
-        for (User teacher : teachers) {
-            try {
-                emailService.sendSubmissionNotification(teacher, homework);
-            } catch (Exception e) {
-                // Log error but don't fail notification creation
-                System.err.println("Failed to send email notification to " + teacher.getEmail() + ": " + e.getMessage());
-            }
-        }
     }
     
     // Create graded notification for student
@@ -254,22 +218,6 @@ public class NotificationService {
         Notification notification = createNotification(submission.getStudentId(), Notification.NotificationType.GRADED,
                          title, message, submission.getHomeworkId(), homeworkTitle,
                          Notification.NotificationPriority.NORMAL);
-        
-        // Send email notification to student
-        try {
-            User student = userRepository.findById(submission.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-            Homework homework = homeworkRepository.findById(submission.getHomeworkId())
-                .orElseThrow(() -> new RuntimeException("Homework not found"));
-            
-            String grade = submission.getGrade() != null ? submission.getGrade().toString() : "Not graded";
-            String feedback = submission.getFeedback() != null ? submission.getFeedback() : "No feedback provided";
-            
-            emailService.sendGradedNotification(student, homework, grade, feedback);
-        } catch (Exception e) {
-            // Log error but don't fail notification creation
-            System.err.println("Failed to send graded email notification: " + e.getMessage());
-        }
     }
     
     // Scheduled task to check for due soon and overdue homework

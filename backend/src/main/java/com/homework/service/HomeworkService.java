@@ -32,10 +32,14 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class HomeworkService {
     
+    private static final Logger logger = LoggerFactory.getLogger(HomeworkService.class);
+
     @Autowired
     private HomeworkRepository homeworkRepository;
     
@@ -63,6 +67,9 @@ public class HomeworkService {
     @Autowired
     private NotificationRepository notificationRepository;
     
+    @Autowired
+    private EmailService emailService;
+    
     private final Path uploadPath = Paths.get("uploads/homework").toAbsolutePath().normalize();
     
     public HomeworkService() {
@@ -74,6 +81,12 @@ public class HomeworkService {
     }
     
     public Homework createHomework(HomeworkRequest request, MultipartFile file, MultipartFile audioFile, String teacherEmail) throws Exception {
+        System.out.println("🚀🚀🚀 HOMEWORK SERVICE CREATE HOMEWORK CALLED! 🚀🚀🚀");
+        System.out.println("Title: " + request.getTitle());
+        System.out.println("Class Grade: " + request.getClassGrade());
+        
+        logger.info("🚀 HomeworkService.createHomework() called with title: '{}'", request.getTitle());
+        
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new Exception("Teacher not found"));
         
@@ -100,7 +113,11 @@ public class HomeworkService {
         homework.setTitle(request.getTitle());
         homework.setDescription(request.getDescription());
         homework.setSubject(request.getSubject());
-        homework.setClassGrade(request.getClassGrade());
+        
+        // Ensure consistent grade format - convert "Grade X" to "Xth Grade" format
+        String normalizedClassGrade = normalizeClassGrade(request.getClassGrade());
+        homework.setClassGrade(normalizedClassGrade);
+        
         homework.setGrade(request.getGrade());
         homework.setClassId(request.getClassId());
         homework.setDueDate(request.getDueDate());
@@ -126,11 +143,113 @@ public class HomeworkService {
         
         Homework savedHomework = homeworkRepository.save(homework);
         
+        System.out.println("📝📝📝 HOMEWORK SAVED SUCCESSFULLY: " + savedHomework.getTitle() + " with ID: " + savedHomework.getId());
+        
         // Create notification for students about new homework
-        notificationService.createNewHomeworkNotification(savedHomework);
+        try {
+            System.out.println("📢📢📢 ABOUT TO CALL NOTIFICATION SERVICE");
+            notificationService.createNewHomeworkNotification(savedHomework);
+            System.out.println("📢📢📢 NOTIFICATION SERVICE COMPLETED SUCCESSFULLY");
+        } catch (Exception e) {
+            System.out.println("❌❌❌ NOTIFICATION SERVICE FAILED: " + e.getMessage());
+            e.printStackTrace();
+            // Continue anyway - don't let notification failure stop email sending
+        }
+        
+        // Send emails to relevant students only (based on class/grade)
+        try {
+            System.out.println("🔍🔍🔍 STARTING EMAIL LOGIC FOR HOMEWORK: " + savedHomework.getTitle() + " with grade: " + savedHomework.getClassGrade());
+            logger.info("🔍 STARTING EMAIL LOGIC FOR HOMEWORK: '{}' with grade: '{}'", savedHomework.getTitle(), savedHomework.getClassGrade());
+            
+            // Handle class grade format mismatch between homework and students
+            String homeworkGrade = savedHomework.getClassGrade();
+            List<User> relevantStudents = new ArrayList<>();
+            
+            logger.info("🔍 Looking for students with exact grade: '{}'", homeworkGrade);
+            
+            // Try to find students with the exact grade first
+            List<User> exactMatchStudents = userRepository.findByClassGrade(homeworkGrade);
+            relevantStudents.addAll(exactMatchStudents);
+            
+            logger.info("🔍 Found {} students with exact grade match", exactMatchStudents.size());
+            
+            // If no exact match, try alternative formats
+            if (relevantStudents.isEmpty() && homeworkGrade != null) {
+                logger.info("🔍 No exact match found, trying alternative formats...");
+                
+                // Convert "Grade X" to "Xth Grade" format
+                if (homeworkGrade.startsWith("Grade ")) {
+                    logger.info("🔍 Converting 'Grade X' format: '{}'", homeworkGrade);
+                    String number = homeworkGrade.substring(6).trim();
+                    try {
+                        int gradeNum = Integer.parseInt(number);
+                        String alternativeFormat = getOrdinalGrade(gradeNum);
+                        logger.info("🔍 Converted to: '{}'", alternativeFormat);
+                        
+                        List<User> altFormatStudents = userRepository.findByClassGrade(alternativeFormat);
+                        relevantStudents.addAll(altFormatStudents);
+                        logger.info("✅ Converted '{}' to '{}' and found {} students", homeworkGrade, alternativeFormat, altFormatStudents.size());
+                    } catch (NumberFormatException e) {
+                        logger.warn("❌ Could not parse grade number from: {}", homeworkGrade);
+                    }
+                }
+                // Convert "Xth Grade" to "Grade X" format
+                else if (homeworkGrade.matches(".*\\d+.*Grade.*")) {
+                    logger.info("🔍 Converting 'Xth Grade' format: '{}'", homeworkGrade);
+                    String number = homeworkGrade.replaceAll("[^0-9]", "");
+                    try {
+                        int gradeNum = Integer.parseInt(number);
+                        String alternativeFormat = "Grade " + gradeNum;
+                        logger.info("🔍 Converted to: '{}'", alternativeFormat);
+                        
+                        List<User> altFormatStudents = userRepository.findByClassGrade(alternativeFormat);
+                        relevantStudents.addAll(altFormatStudents);
+                        logger.info("✅ Converted '{}' to '{}' and found {} students", homeworkGrade, alternativeFormat, altFormatStudents.size());
+                    } catch (NumberFormatException e) {
+                        logger.warn("❌ Could not parse grade number from: {}", homeworkGrade);
+                    }
+                }
+            }
+            
+            // Filter to only include students and remove duplicates
+            relevantStudents = relevantStudents.stream()
+                .filter(student -> student.getRole().toString().equals("STUDENT"))
+                .distinct()
+                .toList();
+            
+            logger.info("🔍 Final student count after filtering: {}", relevantStudents.size());
+            
+            if (!relevantStudents.isEmpty()) {
+                System.out.println("✅✅✅ FOUND " + relevantStudents.size() + " STUDENTS FOR HOMEWORK GRADE: " + homeworkGrade);
+                logger.info("✅ Found {} students for homework grade '{}'", relevantStudents.size(), homeworkGrade);
+                logger.info("🔍 About to send emails to {} students", relevantStudents.size());
+                System.out.println("📧📧📧 ABOUT TO CALL EMAIL SERVICE");
+                emailService.sendNewHomeworkEmail(savedHomework, relevantStudents);
+                System.out.println("✅✅✅ EMAIL SERVICE CALL COMPLETED");
+                logger.info("✅ Email sending completed");
+            } else {
+                System.out.println("❌❌❌ NO STUDENTS FOUND FOR HOMEWORK GRADE: " + homeworkGrade);
+                logger.warn("❌ No students found for homework grade '{}'", homeworkGrade);
+            }
+        } catch (Exception e) {
+            System.out.println("❌❌❌ EMAIL LOGIC FAILED: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("❌ Failed to send homework emails: {}", e.getMessage(), e);
+            // Don't fail homework creation if email fails
+        }
         
         // Create smart reminders for all students in the grade
-        reminderService.createSmartHomeworkReminder(savedHomework);
+        try {
+            System.out.println("⏰⏰⏰ ABOUT TO CALL REMINDER SERVICE");
+            reminderService.createSmartHomeworkReminder(savedHomework);
+            System.out.println("⏰⏰⏰ REMINDER SERVICE COMPLETED SUCCESSFULLY");
+        } catch (Exception e) {
+            System.out.println("❌❌❌ REMINDER SERVICE FAILED: " + e.getMessage());
+            e.printStackTrace();
+            // Continue anyway - don't let reminder failure stop the process
+        }
+        
+        logger.info("🎉 HomeworkService.createHomework() completed successfully for: '{}'", savedHomework.getTitle());
         
         return savedHomework;
     }
@@ -179,7 +298,11 @@ public class HomeworkService {
         homework.setTitle(request.getTitle());
         homework.setDescription(request.getDescription());
         homework.setSubject(request.getSubject());
-        homework.setClassGrade(request.getClassGrade());
+        
+        // Ensure consistent grade format
+        String normalizedClassGrade = normalizeClassGrade(request.getClassGrade());
+        homework.setClassGrade(normalizedClassGrade);
+        
         homework.setGrade(request.getGrade());
         homework.setClassId(request.getClassId());
         homework.setDueDate(request.getDueDate());
@@ -344,5 +467,52 @@ public class HomeworkService {
         }
         
         return stats;
+    }
+
+    private String getOrdinalGrade(int gradeNum) {
+        if (gradeNum >= 10 && gradeNum <= 20) {
+            return gradeNum + "th Grade";
+        }
+        switch (gradeNum % 10) {
+            case 1:
+                return gradeNum + "st Grade";
+            case 2:
+                return gradeNum + "nd Grade";
+            case 3:
+                return gradeNum + "rd Grade";
+            default:
+                return gradeNum + "th Grade";
+        }
+    }
+    
+    /**
+     * Normalize class grade format to ensure consistency
+     * Converts "Grade X" format to "Xth Grade" format
+     */
+    private String normalizeClassGrade(String classGrade) {
+        if (classGrade == null || classGrade.trim().isEmpty()) {
+            return classGrade;
+        }
+        
+        String trimmed = classGrade.trim();
+        
+        // If already in "Xth Grade" format, return as is
+        if (trimmed.matches(".*\\d+.*Grade.*")) {
+            return trimmed;
+        }
+        
+        // Convert "Grade X" to "Xth Grade" format
+        if (trimmed.startsWith("Grade ")) {
+            String number = trimmed.substring(6).trim();
+            try {
+                int gradeNum = Integer.parseInt(number);
+                return getOrdinalGrade(gradeNum);
+            } catch (NumberFormatException e) {
+                logger.warn("Could not parse grade number from: {}", trimmed);
+                return trimmed; // Return original if parsing fails
+            }
+        }
+        
+        return trimmed; // Return original if no conversion needed
     }
 } 

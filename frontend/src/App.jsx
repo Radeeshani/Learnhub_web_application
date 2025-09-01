@@ -18,6 +18,7 @@ import Calendar from './components/calendar/Calendar';
 import ClassManagement from './components/classes/ClassManagement';
 import StudentClassView from './components/classes/StudentClassView';
 import UserManagement from './components/admin/UserManagement';
+import EmailManagement from './components/admin/EmailManagement';
 import Welcome from './components/Welcome';
 import NotificationPanel from './components/common/NotificationPanel';
 import ToastContainerWrapper from './components/common/ToastContainerWrapper';
@@ -149,6 +150,17 @@ const App = () => {
                     <ProtectedRoute allowedRoles={['ADMIN']}>
                       <Sidebar>
                         <UserManagement />
+                      </Sidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/admin/email"
+                  element={
+                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                      <Sidebar>
+                        <EmailManagement />
                       </Sidebar>
                     </ProtectedRoute>
                   }

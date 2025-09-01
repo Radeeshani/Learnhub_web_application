@@ -294,6 +294,14 @@ const AdminDashboard = () => {
             Manage Classes
           </button>
           
+          <button
+            onClick={() => window.location.href = '/admin/email'}
+            className="btn-blue flex items-center"
+          >
+            <FiSend className="h-5 w-5 mr-2" />
+            Email Management
+          </button>
+          
 
         </motion.div>
 

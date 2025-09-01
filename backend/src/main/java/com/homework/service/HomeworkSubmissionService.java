@@ -39,6 +39,9 @@ public class HomeworkSubmissionService {
     @Autowired
     private GamificationService gamificationService;
     
+    @Autowired
+    private EmailService emailService;
+    
     public HomeworkSubmissionResponse submitHomework(HomeworkSubmissionRequest request, String studentEmail) {
         logger.debug("Received homework submission request: homeworkId={}, submissionType={}, hasText={}, hasAudio={}, hasImage={}, hasPdf={}", 
                    request.getHomeworkId(), request.getSubmissionType(), 
@@ -138,6 +141,14 @@ public class HomeworkSubmissionService {
         
         // Create notification for teacher about new submission
         notificationService.createSubmissionNotification(savedSubmission, homework.getTitle());
+        
+        // Send email notification to teacher about new submission
+        try {
+            emailService.sendHomeworkSubmissionEmail(savedSubmission, homework, student);
+        } catch (Exception e) {
+            logger.error("Failed to send submission email notification: {}", e.getMessage());
+            // Don't fail the submission if email fails
+        }
         
         // Process gamification for homework submission
         gamificationService.processHomeworkSubmission(savedSubmission);
