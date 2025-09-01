@@ -54,7 +54,7 @@ source database/setup_database.sql
 **Default Database Credentials:**
 - Database: `homework_db`
 - Username: `root`
-- Password: `Ashmhmd25321`
+- Password: ``
 
 ### 2. Backend Setup
 
@@ -247,4 +247,5 @@ For support and questions:
 - **Advanced Analytics**: Learning analytics and progress reports
 - **Integration**: LMS integration and third-party tools
 - **Multi-language Support**: Internationalization (i18n)
+
 - **Offline Support**: Progressive Web App (PWA) features 
