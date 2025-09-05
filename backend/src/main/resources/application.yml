@@ -10,7 +10,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/homework_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 12345678
+    password:
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
@@ -33,8 +33,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${EMAIL_USERNAME:ashfak25321@gmail.com}
-    password: ${EMAIL_PASSWORD:aahy bavj ftvf dtqh}
+    username: ${EMAIL_USERNAME:radeeshani1@gmail.com}
+    password: ${EMAIL_PASSWORD:oshb zeex vdjk tzci}
     properties:
       mail:
         smtp:
@@ -58,7 +58,7 @@ jwt:
 
 # Email Configuration
 email:
-  from: ${EMAIL_FROM:ashfak25321@gmail.com}
+  from: ${EMAIL_FROM:radeeshani1@gmail.com}
 
 
 

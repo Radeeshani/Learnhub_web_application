@@ -174,7 +174,7 @@ public class AdminController {
      * Get recent system activities
      */
     @GetMapping("/activities")
-    public ResponseEntity<?> getRecentActivities(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getRecentActivities(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             if (!validateAdminToken(authHeader)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Admin access required"));
